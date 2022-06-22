@@ -8,7 +8,7 @@
     "compile:watch": "tsc -w",
     "clean": "rimraf build",
     "execute": "node build/src/index.js",
-    "start": "yarn clean && yarn tsc && yarn execute"
+    "start": "yarn clean && yarn compile && yarn execute"
   },
   "dependencies": {
     "express": "^4.18.1",
