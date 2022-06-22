@@ -16,7 +16,7 @@ export const create = async () => {
 
         try {
             const result = await page.goto(renderRequest.url, {
-                waitUntil: renderRequest.readySelector === undefined ? "domcontentloaded" : undefined
+                waitUntil: renderRequest.readySelector === undefined ? "networkidle0" : undefined
             })
 
             if (renderRequest.readySelector !== undefined) {
@@ -28,7 +28,11 @@ export const create = async () => {
             response
                 .status(result?.status() || 200)
                 .send(content)
-        } finally {
+        } catch (error: unknown) {
+            response.status(400)
+                .json({ errorMessages: [(error as Error).message] })
+         }
+        finally {
             await page.close()
         }
 
