@@ -3,7 +3,7 @@ import puppeteer from "puppeteer"
 
 interface RenderRequest {
     readonly url: string
-    readonly readySelector: string | undefined
+    readonly readyCssSelectors: string[] | undefined
 }
 
 export const create = async () => {
@@ -16,11 +16,13 @@ export const create = async () => {
 
         try {
             const result = await page.goto(renderRequest.url, {
-                waitUntil: renderRequest.readySelector === undefined ? "networkidle0" : undefined
+                waitUntil:
+                    (renderRequest.readyCssSelectors === undefined || renderRequest.readyCssSelectors.length === 0) ? "networkidle0" : undefined
             })
 
-            if (renderRequest.readySelector !== undefined) {
-                await page.waitForSelector(renderRequest.readySelector)
+            if (renderRequest.readyCssSelectors !== undefined) {
+                await renderRequest.readyCssSelectors
+                    .reduce<Promise<void>>((promise, cssSelector) => promise.then(() => page.waitForSelector(cssSelector).then(() => {})), Promise.resolve())
             }
 
             const content = await page.content()
@@ -30,9 +32,8 @@ export const create = async () => {
                 .send(content)
         } catch (error: unknown) {
             response.status(400)
-                .json({ errorMessages: [(error as Error).message] })
-         }
-        finally {
+                .json({errorMessages: [(error as Error).message]})
+        } finally {
             await page.close()
         }
 

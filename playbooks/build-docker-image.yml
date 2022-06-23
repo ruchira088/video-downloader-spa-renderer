@@ -3,5 +3,17 @@
   connection: local
 
   tasks:
+    - name: Render Dockerfile
+      import_tasks: tasks/render-dockerfile.yml
+
     - name: Build Docker image
-      import_tasks: tasks/build-docker-image.yml
+      shell: |
+        docker build \
+          -t video-downloader-spa-renderer:{{ git_branch }} \
+          -f output/docker/Dockerfile \
+          ../
+
+    - name: Cleanup output directory
+      file:
+        path: output/docker
+        state: absent
