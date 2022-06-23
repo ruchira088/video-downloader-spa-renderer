@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spa-renderer-deployment
+  namespace: {{ namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: spa-renderer
+      branch: {{ git_branch }}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: spa-renderer
+        branch: {{ git_branch }}
+    spec:
+      containers:
+        - name: spa-renderer-container
+          image: ruchira088/video-downloader-spa-renderer:{{ git_branch }}-{{ git_commit }}
+          readinessProbe:
+            httpGet:
+              port: expressJS-port
+              path: /service/health-check
+              httpHeaders:
+                - name: X-Request-ID
+                  value: k8s-readiness-probe
+          livenessProbe:
+            httpGet:
+              port: expressJS-port
+              path: /service/health-check
+              httpHeaders:
+                - name: X-Request-ID
+                  value: k8s-liveness-probe
+          startupProbe:
+            periodSeconds: 5
+            failureThreshold: 10
+            httpGet:
+              port: expressJS-port
+              path: /service/health-check
+              httpHeaders:
+                - name: X-Request-ID
+                  value: k8s-liveness-probe
+          ports:
+            - name: expressJS-port
+              containerPort: 8000

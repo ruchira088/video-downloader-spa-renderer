@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: spa-renderer-service
+  namespace: {{ namespace }}
+spec:
+  selector:
+    app: spa-renderer
+    branch: {{ git_branch }}
+  ports:
+    - name: expressJS-port
+      port: 8000
