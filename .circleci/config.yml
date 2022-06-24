@@ -41,6 +41,11 @@ jobs:
       - run: *install-ansible
       - checkout
       - run:
+          name: Create buildx builder
+          command: |
+            docker context create buildx-build && \
+            docker buildx create --use buildx-build
+      - run:
           name: Build and publish Docker image to Docker Hub
           command: ansible-playbook playbooks/build-and-publish-docker-image.yml
 
