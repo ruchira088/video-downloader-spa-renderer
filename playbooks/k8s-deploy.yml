@@ -56,5 +56,5 @@
 
         - name: Clean up kubeconfig file
           file:
-            path: {{ kubeconfig }}
+            path: "{{ kubeconfig }}"
             state: absent
