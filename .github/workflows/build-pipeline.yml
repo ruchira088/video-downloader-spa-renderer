@@ -1,0 +1,22 @@
+name: video-downloader-spa-renderer-build-pipeline
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up NodeJS
+        uses: actions/setup-node@v3
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Transpile TypeScript
+        run: yarn clean && yarn compile

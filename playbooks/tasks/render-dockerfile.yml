@@ -6,7 +6,7 @@
 - name: Gather git information
   import_tasks: git-info.yml
 
-- name: Generate the Dockerfile
+- name: Render the Dockerfile
   template:
     src: docker/Dockerfile
     dest: output/docker/Dockerfile
