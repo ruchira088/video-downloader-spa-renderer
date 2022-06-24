@@ -3,8 +3,23 @@
   connection: local
 
   tasks:
-    - name: Render Dockerfile
-      import_tasks: tasks/render-dockerfile.yml
+    - name: Create output directory
+      file:
+        path: output/docker
+        state: directory
+
+    - name: Gather git information
+      import_tasks: tasks/git-info.yml
+
+    - name: Render the Dockerfile
+      template:
+        src: docker/Dockerfile
+        dest: output/docker/Dockerfile
+      vars:
+        build_timestamp: "{{ ansible_date_time.iso8601 }}"
+
+    - name: Clean and build project
+      shell: cd ../ && npm ci && npm run clean-compile
 
     - name: Login to Docker Hub
       command: docker login -u {{ docker_username }} -p {{ docker_password }}

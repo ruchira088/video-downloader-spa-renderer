@@ -1,10 +1,11 @@
-- name: Gather git information
-  import_tasks: tasks/git-info.yml
 
 - name: Create output directory
   file:
     path: output
     state: directory
+
+- name: Gather git information
+  import_tasks: tasks/git-info.yml
 
 - name: Create K8s config file
   copy:
