@@ -1,0 +1,65 @@
+version: 2.1
+
+alias:
+  - &install-ansible
+    name: Install Ansible
+    command: |
+      sudo apt-get update && \
+      sudo apt-get install software-properties-common ansible python3-pip -y && \
+      pip3 install boto3 botocore openshift
+
+  - &install-kubectl
+    name: Install kubectl
+    command: |
+      sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg && \
+      echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list && \
+      sudo apt-get update && \
+      sudo apt-get install -y kubectl
+
+jobs:
+  build-and-publish-docker-image:
+    docker:
+      - image: cimg/node:lts
+    steps:
+      - setup_remote_docker:
+          version: 20.10.14
+      - run: *install-ansible
+      - checkout
+      - run:
+          name: Build and publish Docker image to Docker Hub
+          command: ansible-playbook playbooks/build-and-publish-docker-image.yml
+
+  deploy-to-k8s:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run: *install-ansible
+      - run: *install-kubectl
+      - checkout
+      - run:
+          name: Deploy applications to K8s
+          command: ansible-playbook playbooks/k8s-deploy.yml
+
+orbs:
+  slack: circleci/slack@3
+
+workflows:
+  version: 2
+
+  video-downloader-spa-renderer:
+    jobs:
+      - build-and-publish-docker-image:
+          context:
+            - aws-credentials
+            - slack-webhook
+          post-steps:
+            - slack/status
+
+      - deploy-to-k8s:
+          context:
+            - aws-credentials
+            - slack-webhook
+          requires:
+            - build-and-publish-docker-image
+          post-steps:
+            - slack/status
