@@ -17,6 +17,21 @@ alias:
       sudo apt-get install -y kubectl
 
 jobs:
+  build-and-test:
+    docker:
+      - image: cimg/node:lts
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: npm ci
+      - run:
+          name: Build project
+          command: npm run clean-compile
+      - run:
+          name: Execute test suite
+          command: npm test
+
   build-and-publish-docker-image:
     docker:
       - image: cimg/node:lts
@@ -48,10 +63,18 @@ workflows:
 
   video-downloader-spa-renderer:
     jobs:
+      - build-and-test:
+          context:
+            - slack-webhook
+          post-steps:
+            - slack/status
+
       - build-and-publish-docker-image:
           context:
             - aws-credentials
             - slack-webhook
+          requires:
+            - build-and-test
           post-steps:
             - slack/status
 
