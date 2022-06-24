@@ -1,11 +1,11 @@
 import {Moment} from "moment/moment"
 import moment from "moment"
 
-export interface TimeService {
+export interface Clock {
     timestamp(): Moment
 }
 
-export const timeServiceImpl: TimeService = {
+export const defaultClock: Clock = {
     timestamp(): moment.Moment {
         return moment()
     }
