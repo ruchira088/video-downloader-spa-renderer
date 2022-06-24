@@ -1,4 +1,4 @@
-name: video-downloader-spa-renderer-build-pipeline
+name: CI pipeline
 
 on:
   - push
@@ -19,4 +19,7 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Transpile TypeScript
-        run: yarn clean && yarn compile
+        run: yarn clean-compile
+
+      - name: Execute test suite
+        run: yarn test
