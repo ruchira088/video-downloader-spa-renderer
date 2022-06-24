@@ -8,5 +8,5 @@ spec:
     app: spa-renderer
     branch: {{ git_branch }}
   ports:
-    - name: expressJS-port
+    - name: expressjs-port
       port: 8000

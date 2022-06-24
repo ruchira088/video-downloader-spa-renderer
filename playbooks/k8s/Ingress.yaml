@@ -17,4 +17,4 @@ spec:
               service:
                 name: spa-renderer-service
                 port:
-                  name: expressJS-port
+                  name: expressjs-port
