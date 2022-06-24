@@ -14,19 +14,19 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 WORKDIR /opt/app
 
 ADD package.json .
-ADD yarn.lock .
+ADD package-lock.json .
 
-RUN yarn install
+RUN npm ci
 
 ADD tsconfig.json .
 ADD src src
 
-RUN yarn clean && yarn compile
+RUN npm run clean-compile
 
 ENV GIT_COMMIT "{{ git_commit }}"
 ENV GIT_BRANCH "{{ git_branch }}"
 ENV BUILD_TIMESTAMP "{{ build_timestamp }}"
 
-ENTRYPOINT ["yarn"]
+ENTRYPOINT ["npm", "run"]
 
 CMD ["execute"]

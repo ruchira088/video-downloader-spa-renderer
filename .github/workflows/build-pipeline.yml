@@ -16,10 +16,10 @@ jobs:
         uses: actions/setup-node@v3
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: npm ci
 
       - name: Transpile TypeScript
-        run: yarn clean-compile
+        run: npm run clean-compile
 
       - name: Execute test suite
-        run: yarn test
+        run: npm test
