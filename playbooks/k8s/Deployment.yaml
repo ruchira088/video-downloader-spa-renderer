@@ -21,14 +21,14 @@ spec:
           readinessProbe:
             httpGet:
               port: expressjs-port
-              path: /service/health-check
+              path: /service/information
               httpHeaders:
                 - name: X-Request-ID
                   value: k8s-readiness-probe
           livenessProbe:
             httpGet:
               port: expressjs-port
-              path: /service/health-check
+              path: /service/information
               httpHeaders:
                 - name: X-Request-ID
                   value: k8s-liveness-probe
@@ -37,7 +37,7 @@ spec:
             failureThreshold: 10
             httpGet:
               port: expressjs-port
-              path: /service/health-check
+              path: /service/information
               httpHeaders:
                 - name: X-Request-ID
                   value: k8s-liveness-probe
