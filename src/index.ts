@@ -4,6 +4,9 @@ import * as ServiceRouter from "./routes/ServiceRouter"
 import * as RenderRouter from "./routes/RenderRouter"
 import notFoundHandler from "./middleware/NotFoundHandler"
 import {Clock, defaultClock} from "./utils/Clock"
+import * as Logger from "./logger/Logger"
+
+const logger = Logger.create(__filename)
 
 const run = async (clock: Clock, applicationConfiguration: ApplicationConfiguration) => {
     const app = express()
@@ -19,7 +22,7 @@ const run = async (clock: Clock, applicationConfiguration: ApplicationConfigurat
     const {host, port} = applicationConfiguration.httpConfiguration
 
     app.listen(port, host, () => {
-        console.log(`Server started at http://${host}:${port}`)
+        logger.info(`Server started at http://${host}:${port}`)
     })
 }
 
