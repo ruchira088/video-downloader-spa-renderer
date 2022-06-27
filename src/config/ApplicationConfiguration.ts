@@ -1,9 +1,9 @@
 import {httpConfiguration, HttpConfiguration} from "./HttpConfiguration"
-import {serviceInformation, ServiceInformation} from "./ServiceInformation"
+import {serviceInformation, BuildInformation} from "./BuildInformation"
 
 export interface ApplicationConfiguration {
     readonly httpConfiguration: HttpConfiguration
-    readonly serviceInformation: ServiceInformation
+    readonly serviceInformation: BuildInformation
 }
 
 export const applicationConfiguration = (env: NodeJS.ProcessEnv) => ({

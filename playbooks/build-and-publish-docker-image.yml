@@ -35,6 +35,7 @@
         docker buildx build \
           --push \
           --platform {{ architectures }} \
+          -t ruchira088/video-downloader-spa-renderer:{{ git_branch }} \
           -t ruchira088/video-downloader-spa-renderer:{{ git_branch }}-{{ git_commit }} \
           -f output/docker/Dockerfile \
           ../

@@ -1,7 +1,7 @@
 import moment, {Moment} from "moment"
 import {Maybe} from "monet"
 
-export interface ServiceInformation {
+export interface BuildInformation {
     readonly gitBranch: string
     readonly gitCommit: string
     readonly buildTimestamp: Maybe<Moment>
