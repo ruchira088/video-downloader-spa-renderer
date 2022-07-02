@@ -5,6 +5,7 @@ import * as RenderRouter from "./routes/RenderRouter"
 import * as RenderingService from "./services/RenderingService"
 import * as HealthService from "./services/HealthService"
 import notFoundHandler from "./middleware/NotFoundHandler"
+import errorHandler from "./middleware/ErrorHandler"
 import {Clock, defaultClock} from "./utils/Clock"
 import * as Logger from "./logger/Logger"
 
@@ -23,6 +24,7 @@ const run = async (clock: Clock, applicationConfiguration: ApplicationConfigurat
     app.use("/render", RenderRouter.create(renderingService))
 
     app.use(notFoundHandler)
+    app.use(errorHandler)
 
     const {host, port} = applicationConfiguration.httpConfiguration
 
