@@ -14,12 +14,12 @@ interface ApplicationInformation {
     readonly buildTimestamp: string
 }
 
-type HealthStatus = "healthy" | "unhealthy"
+export type HealthStatus = "healthy" | "unhealthy"
 
 export interface HealthService {
     serviceInformation(): ApplicationInformation
 
-    healthCheck(): Promise<HealthCheck>
+    healthCheck(): Promise<HealthCheck & {[key: string]: HealthStatus}>
 }
 
 export interface HealthCheck {
@@ -30,10 +30,8 @@ export interface HealthCheck {
 const logger = Logger.create(__filename)
 const client = axios.create({timeout: 5000})
 
-const INTERNET_CONNECTIVITY_URL = "https://ip.ruchij.com"
-
-const HEALTH_CHECK_URL = ""
-const HEALTH_CHECK_READY_CSS_SELECTORS = [""]
+const HEALTH_CHECK_URL = "https://spa-health-check.ruchij.com"
+const HEALTH_CHECK_READY_CSS_SELECTORS = ["#text-field", ".class-name", ".deferred-class-name"]
 
 export const create =
     (renderingService: RenderingService, buildInformation: BuildInformation, clock: Clock): HealthService => ({
@@ -47,12 +45,12 @@ export const create =
                 buildTimestamp: buildInformation.buildTimestamp.map(moment => moment.toISOString()).orJust("not available")
             }
         },
-        async healthCheck(): Promise<HealthCheck> {
+        async healthCheck(): Promise<HealthCheck & {[key: string]: HealthStatus}> {
             const internetConnectivity: Promise<HealthStatus> =
-                client.get(INTERNET_CONNECTIVITY_URL)
+                client.get(HEALTH_CHECK_URL)
                     .then<HealthStatus>(response => response.status === 200 ? "healthy" : "unhealthy")
                     .catch(exception => {
-                        logger.error(`Health check failed for Internet connectivity url=${INTERNET_CONNECTIVITY_URL}`, exception.message)
+                        logger.error(`Health check failed for Internet connectivity url=${HEALTH_CHECK_URL}`, exception.message)
                         return "unhealthy"
                     })
 

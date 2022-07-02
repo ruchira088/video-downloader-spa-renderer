@@ -1,21 +1,16 @@
 import express, {Request, Response} from "express"
-import packageJson from "../../package.json"
-import {Clock} from "../utils/Clock"
-import {BuildInformation} from "../config/BuildInformation"
+import {HealthService, HealthStatus} from "../services/HealthService"
 
-export const create = (clock: Clock, serviceInformation: BuildInformation) =>
+export const create = (healthService: HealthService) =>
     express.Router()
         .get("/information", (request: Request, response: Response) => {
-            response.status(200).json({
-                name: packageJson.name,
-                version: packageJson.version,
-                timestamp: clock.timestamp(),
-                gitBranch: serviceInformation.gitBranch,
-                gitCommit: serviceInformation.gitCommit,
-                buildTimestamp: serviceInformation.buildTimestamp.map(moment => moment.toISOString()).orJust("not available")
-            })
+            response.status(200).json(healthService.serviceInformation())
         })
-        .get("/health-check", (request: Request, response: Response) => {
+        .get("/health-check", async (request: Request, response: Response) => {
+            const healthCheck = await healthService.healthCheck()
 
+            const statusCode =
+                Object.values<HealthStatus>(healthCheck).some(healthStatus => healthStatus === "unhealthy") ? 503 : 200
+
+            response.status(statusCode).json(healthCheck)
         })
-
