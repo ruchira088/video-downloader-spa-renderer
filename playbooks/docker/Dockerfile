@@ -1,5 +1,7 @@
 FROM node:lts-alpine
 
+LABEL org.opencontainers.image.source https://github.com/ruchira088/video-downloader-spa-renderer
+
 RUN apk add --no-cache \
       chromium \
       nss \
@@ -8,8 +10,8 @@ RUN apk add --no-cache \
       ca-certificates \
       ttf-freefont
 
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true
+ENV PUPPETEER_EXECUTABLE_PATH /usr/bin/chromium-browser
 
 WORKDIR /opt/app
 

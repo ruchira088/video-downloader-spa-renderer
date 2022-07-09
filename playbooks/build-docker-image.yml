@@ -3,32 +3,7 @@
   connection: local
 
   tasks:
-    - name: Create output directory
-      file:
-        path: output/docker
-        state: directory
-
-    - name: Gather git information
-      import_tasks: tasks/git-info.yml
-
-    - name: Render the Dockerfile
-      template:
-        src: docker/Dockerfile
-        dest: output/docker/Dockerfile
-      vars:
-        build_timestamp: "{{ ansible_date_time.iso8601 }}"
-
-    - name: Build project
-      shell: cd ../ && npm install && npm run clean-compile
-
     - name: Build Docker image
-      shell: |
-        docker build \
-          -t video-downloader-spa-renderer:{{ git_branch }} \
-          -f output/docker/Dockerfile \
-          ../
-
-    - name: Cleanup output directory
-      file:
-        path: output/docker
-        state: absent
+      import_tasks: tasks/build-and-publish-docker-image.yml
+      vars:
+        publish: false

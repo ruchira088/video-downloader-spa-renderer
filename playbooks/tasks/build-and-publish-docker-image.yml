@@ -1,0 +1,48 @@
+- name: Create output directory
+  file:
+    path: output/docker
+    state: directory
+
+- name: Gather git information
+  import_tasks: git-info.yml
+
+- name: Render the Dockerfile
+  template:
+    src: docker/Dockerfile
+    dest: output/docker/Dockerfile
+  vars:
+    build_timestamp: "{{ ansible_date_time.iso8601 }}"
+
+- name: Clean and build project
+  shell: cd ../ && npm ci && npm run clean-compile
+
+- name: Build Docker image
+  shell: |
+    docker build \
+      -t video-downloader-spa-renderer:{{ git_branch }} \
+      -f output/docker/Dockerfile \
+      ../
+  when: not publish
+
+- name: Build and publish Docker image
+  when: publish
+  block:
+    - name: Login to GitHub container registry
+      command: docker login ghcr.io -u USERNAME -p {{ access_token }}
+      vars:
+        access_token: "{{ lookup('aws_ssm', '/github/token', region='ap-southeast-2') }}"
+
+    - name: Publish Docker image
+      shell: |
+        docker buildx build \
+          --push \
+          --platform linux/arm64,linux/amd64 \
+          -t ghcr.io/ruchira088/video-downloader-spa-renderer:{{ git_branch }} \
+          -t ghcr.io/ruchira088/video-downloader-spa-renderer:{{ git_branch }}-{{ git_commit }} \
+          -f output/docker/Dockerfile \
+          ../
+
+- name: Cleanup output directory
+  file:
+    path: output/docker
+    state: absent

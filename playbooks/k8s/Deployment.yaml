@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: spa-renderer-container
-          image: ruchira088/video-downloader-spa-renderer:{{ git_branch }}-{{ git_commit }}
+          image: ghcr.io/ruchira088/video-downloader-spa-renderer:{{ git_branch }}-{{ git_commit }}
           readinessProbe:
             httpGet:
               port: expressjs-port
@@ -44,3 +44,5 @@ spec:
           ports:
             - name: expressjs-port
               containerPort: 8000
+      imagePullSecrets:
+        - name: docker-registry-credentials

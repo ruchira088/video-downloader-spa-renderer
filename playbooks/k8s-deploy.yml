@@ -3,6 +3,9 @@
   connection: local
 
   tasks:
+    - name: Install dependencies
+      import_tasks: tasks/install-dependencies.yml
+
     - name: Gather git information
       import_tasks: tasks/git-info.yml
 
@@ -18,6 +21,7 @@
     - set_fact:
         namespace: "{{ k8s_vars[env].namespace }}"
         hostname: "{{ k8s_vars[env].hostname }}"
+        ghcr_credentials: "{{ lookup('aws_ssm', '/github/ghcr/docker-config', region='ap-southeast-2') }}"
 
     - name: Render K8s resource files
       block:
@@ -40,6 +44,9 @@
       block:
         - name: Create Namespace
           command: kubectl apply -f output/k8s/Namespace.yaml --kubeconfig {{ kubeconfig }}
+
+        - name: Create Docker registry secret
+          command: kubectl apply -f output/k8s/DockerRegistryCredentials.yaml --kubeconfig {{ kubeconfig }}
 
         - name: Deploy application
           command: kubectl apply -f output/k8s --kubeconfig {{ kubeconfig }}
