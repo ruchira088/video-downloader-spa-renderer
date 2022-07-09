@@ -50,7 +50,6 @@ const createVersion = (git, cli) =>
       updatePackageJson({ version })
         .then(() => git.add(packageJsonPath))
         .then(() => git.commit(`Creating version ${version}`))
-        .then(() => git.push())
         .then(() => git.checkout(PROD_BRANCH))
         .then(() => git.raw("rebase", DEV_BRANCH))
         .then(() => git.raw("push"))
