@@ -1,4 +1,4 @@
-name: video-downloader-spa-renderer-build-pipeline
+name: build-pipeline
 
 on:
   - push
