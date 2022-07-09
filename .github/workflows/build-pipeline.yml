@@ -2,7 +2,6 @@ name: build-pipeline
 
 on:
   - push
-  - pull_request
 
 jobs:
   transpile-and-test:
