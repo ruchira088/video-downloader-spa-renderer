@@ -30,8 +30,8 @@ export interface HealthCheck {
 const logger = Logger.create(__filename)
 const client = axios.create({timeout: 5000})
 
-const HEALTH_CHECK_URL = "https://spa-health-check.ruchij.com"
-const HEALTH_CHECK_READY_CSS_SELECTORS = ["#text-field", ".class-name", ".deferred-class-name"]
+export const HEALTH_CHECK_URL = "https://spa-health-check.ruchij.com"
+export const HEALTH_CHECK_READY_CSS_SELECTORS = ["#text-field", ".class-name", ".deferred-class-name"]
 
 export const create =
     (renderingService: RenderingService, buildInformation: BuildInformation, clock: Clock): HealthService => ({
