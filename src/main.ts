@@ -2,12 +2,14 @@ import {applicationConfiguration} from "./config/ApplicationConfiguration"
 import {defaultClock} from "./utils/Clock"
 import * as Logger from "./logger/Logger"
 import {httpApplication} from "./app"
+import {launchBrowser} from "./services/RenderingService"
 
 const logger = Logger.create(__filename)
 
 const configuration = applicationConfiguration(process.env)
 
-httpApplication(defaultClock, configuration)
+launchBrowser()
+    .then(browser => httpApplication(browser, defaultClock, configuration))
     .then(app => {
         const {host, port} = configuration.httpConfiguration
 

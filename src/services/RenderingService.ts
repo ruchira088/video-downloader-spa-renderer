@@ -1,6 +1,6 @@
 import * as Logger from "../logger/Logger"
 import {Clock} from "../utils/Clock"
-import puppeteer from "puppeteer"
+import puppeteer, {Browser} from "puppeteer"
 
 export interface RenderingService {
     render(url: string, readyCssSelectors: string[] | undefined): Promise<string>
@@ -8,10 +8,11 @@ export interface RenderingService {
 
 const logger = Logger.create(__filename)
 
-export const create = async (clock: Clock): Promise<RenderingService> => {
-    const browser = await puppeteer.launch({args: ["--disable-dev-shm-usage", "--no-sandbox"]})
+export const launchBrowser =
+    (): Promise<Browser> => puppeteer.launch({args: ["--disable-dev-shm-usage", "--no-sandbox"]})
 
-    return {
+export const create = async (browser: Browser, clock: Clock): Promise<RenderingService> =>
+    ({
         async render(url: string, readyCssSelectors: string[] | undefined): Promise<string> {
             const startTime = clock.timestamp()
 
@@ -43,5 +44,4 @@ export const create = async (clock: Clock): Promise<RenderingService> => {
                 await page.close()
             }
         }
-    }
-}
+    })

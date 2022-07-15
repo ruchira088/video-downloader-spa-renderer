@@ -3,10 +3,12 @@ import {httpApplication} from "./app"
 import {HEALTH_CHECK_READY_CSS_SELECTORS, HEALTH_CHECK_URL} from "./services/HealthService"
 import {defaultClock} from "./utils/Clock"
 import {applicationConfiguration} from "./config/ApplicationConfiguration"
+import {launchBrowser} from "./services/RenderingService"
 
 describe("Testing HTTP application", () => {
     it("Retrieving the HTML markup of the health check SPA service", async () => {
-        const app = await httpApplication(defaultClock, applicationConfiguration(process.env))
+        const browser = await launchBrowser()
+        const app = await httpApplication(browser, defaultClock, applicationConfiguration(process.env))
 
         const response =
             await request(app)
@@ -18,5 +20,7 @@ describe("Testing HTTP application", () => {
 
         expect(response.status).toBe(200)
         expect(response.text).toBe(`<!DOCTYPE html><html lang="en"><head>${expectedHead}</head><body>${expectedBody}</body></html>`)
+
+        await browser.close()
     })
 })
