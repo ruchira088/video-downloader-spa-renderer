@@ -19,7 +19,8 @@
 - name: Build Docker image
   shell: |
     docker build \
-      -t video-downloader-spa-renderer:{{ git_branch }} \
+      -t ghcr.io/ruchira088/video-downloader-spa-renderer:{{ git_branch }} \
+      -t ghcr.io/ruchira088/video-downloader-spa-renderer:{{ git_branch }}-{{ git_commit }} \
       -f output/docker/Dockerfile \
       ../
   when: not publish
