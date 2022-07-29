@@ -1,7 +1,7 @@
-import express, {Request, Response} from "express"
+import express, {Request, Response, Router} from "express"
 import {HealthService, HealthStatus} from "../services/HealthService"
 
-export const create = (healthService: HealthService) =>
+export const create = (healthService: HealthService): Router =>
     express.Router()
         .get("/information", (request: Request, response: Response) => {
             response.status(200).json(healthService.serviceInformation())
