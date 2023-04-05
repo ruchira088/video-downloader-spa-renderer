@@ -10,7 +10,7 @@
 - name: Create K8s config file
   copy:
     dest: output/kubeconfig
-    content: "{{ lookup('aws_ssm', '/infrastructure/prod/k8s/config' if env == 'production' else '/infrastructure/dev/k8s/config', region='ap-southeast-2') }}"
+    content: "{{ lookup('aws_ssm', '/infrastructure/home/k8s/config', region='ap-southeast-2') }}"
 
 - name: Set kubeconfig file location
   set_fact:
