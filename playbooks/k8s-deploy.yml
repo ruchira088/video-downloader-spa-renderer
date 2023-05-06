@@ -16,7 +16,7 @@
             hostname: spa-renderer.video.home.ruchij.com
           development:
             namespace: video-downloader-back-end-{{ git_branch }}
-            hostname: spa-renderer.{{ git_branch }}.video.home.ruchij.com
+            hostname: spa-renderer.{{ git_branch }}.video.dev.ruchij.com
 
     - set_fact:
         namespace: "{{ k8s_vars[env].namespace }}"
