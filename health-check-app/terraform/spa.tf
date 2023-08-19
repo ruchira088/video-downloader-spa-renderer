@@ -38,10 +38,43 @@ resource "aws_s3_object" "spa_files" {
   content_type = each.value.content_type
 }
 
+resource "aws_acm_certificate" "ssl_certificate" {
+  provider          = aws.us-east-1
+  domain_name       = var.domain_name
+  validation_method = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_acm_certificate_validation" "ssl_certificate_validation" {
+  provider                = aws.us-east-1
+  certificate_arn         = aws_acm_certificate.ssl_certificate.arn
+  validation_record_fqdns = [for record in aws_route53_record.ssl_certificate_validation_domains : record.fqdn]
+}
+
+resource "aws_route53_record" "ssl_certificate_validation_domains" {
+  for_each = {
+    for dvo in aws_acm_certificate.ssl_certificate.domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      record = dvo.resource_record_value
+      type   = dvo.resource_record_type
+    }
+  }
+
+  allow_overwrite = true
+  name            = each.value.name
+  type            = each.value.type
+  records         = [each.value.record]
+  ttl             = 60
+  zone_id         = data.aws_route53_zone.ruchij_zone.id
+}
+
 resource "aws_cloudfront_distribution" "spa_cf" {
   enabled = true
 
-  aliases = [ var.domain_name ]
+  aliases             = [var.domain_name]
   default_root_object = "index.html"
 
   default_cache_behavior {
@@ -60,8 +93,8 @@ resource "aws_cloudfront_distribution" "spa_cf" {
   }
 
   custom_error_response {
-    error_code = 403
-    response_code = 200
+    error_code         = 403
+    response_code      = 200
     response_page_path = "/index.html"
   }
 
@@ -77,8 +110,8 @@ resource "aws_cloudfront_distribution" "spa_cf" {
   }
 
   viewer_certificate {
-    acm_certificate_arn = local.certificate_arn
-    ssl_support_method = "sni-only"
+    acm_certificate_arn = aws_acm_certificate.ssl_certificate.arn
+    ssl_support_method  = "sni-only"
   }
 }
 
