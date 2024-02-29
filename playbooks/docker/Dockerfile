@@ -1,6 +1,6 @@
 FROM node:lts-alpine
 
-LABEL org.opencontainers.image.source https://github.com/ruchira088/video-downloader-spa-renderer
+LABEL org.opencontainers.image.source=https://github.com/ruchira088/video-downloader-spa-renderer
 
 RUN apk add --no-cache \
       chromium \
