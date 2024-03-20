@@ -10,7 +10,7 @@ export interface RenderingService {
 const logger = Logger.create(__filename)
 
 export const launchBrowser =
-    (): Promise<Browser> => puppeteer.launch({args: ["--disable-dev-shm-usage", "--no-sandbox"], headless: "new"})
+    (): Promise<Browser> => puppeteer.launch({args: ["--disable-dev-shm-usage", "--no-sandbox"], headless: true})
 
 export const create = async (browser: Browser, clock: Clock): Promise<RenderingService> => {
     async function run<A>(url: string, readyCssSelectors: string[] | undefined, execute: (page: Page) => Promise<A>, action: string): Promise<A> {
