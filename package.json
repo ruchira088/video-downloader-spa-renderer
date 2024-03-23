@@ -1,6 +1,6 @@
 {
   "name": "video-downloader-spa-renderer",
-  "version": "1.1.10-SNAPSHOT",
+  "version": "1.1.10",
   "description": "Renders SPA pages",
   "license": "MIT",
   "scripts": {
