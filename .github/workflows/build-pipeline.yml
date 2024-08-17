@@ -6,7 +6,7 @@ on:
       - "**"
 
 concurrency:
-  group: ${{ github.ref }}
+  group: build-pipeline-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

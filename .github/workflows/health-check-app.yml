@@ -6,7 +6,7 @@ on:
       - dev
 
 concurrency:
-  group: ${{ github.ref }}
+  group: health-check-app-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
