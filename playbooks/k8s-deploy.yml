@@ -14,7 +14,7 @@
           production:
             namespace: video-downloader-back-end
             hostname: spa-renderer.video.home.ruchij.com
-            replica_count: 3
+            replica_count: 2
           development:
             namespace: video-downloader-back-end-{{ git_branch }}
             hostname: spa-renderer.{{ git_branch }}.video.dev.ruchij.com
