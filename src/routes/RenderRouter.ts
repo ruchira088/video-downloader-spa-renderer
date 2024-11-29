@@ -1,12 +1,19 @@
 import express, {Request, Response, Router} from "express"
 import {RenderingService} from "../services/RenderingService"
+import {z} from "zod"
 
-interface RenderRequest {
-    readonly url: string
-    readonly readyCssSelectors: string[] | undefined
-}
+const RenderRequest = z.object({
+    url: z.string(),
+    readyCssSelectors: z.string().array().optional()
+})
 
-type JsExecutionRequest = RenderRequest & { script: string }
+type RenderRequest = z.infer<typeof RenderRequest>
+
+const JsExecutionRequest = RenderRequest.and(z.object({
+    script: z.string()
+}))
+
+type JsExecutionRequest = z.infer<typeof JsExecutionRequest>
 
 export const create = (renderingService: RenderingService): Router => {
     const createResponse = (response: Response, result: Promise<unknown>): Promise<Response> =>
@@ -18,12 +25,12 @@ export const create = (renderingService: RenderingService): Router => {
 
     return express.Router()
         .post("/", (request: Request, response: Response) => {
-            const {url, readyCssSelectors} = request.body as RenderRequest
+            const {url, readyCssSelectors}: RenderRequest = RenderRequest.parse(request.body)
 
             createResponse(response, renderingService.render(url, readyCssSelectors))
         })
         .post("/execute", async (request: Request, response: Response) => {
-            const {url, script, readyCssSelectors} = request.body as JsExecutionRequest
+            const {url, script, readyCssSelectors}: JsExecutionRequest = JsExecutionRequest.parse(request.body)
 
             createResponse(
                 response,
