@@ -55,3 +55,17 @@ jobs:
       - name: Apply Terraform
         working-directory: ./health-check-app/terraform
         run: terraform apply -auto-approve
+
+  send-notification:
+    runs-on: ubuntu-latest
+    if: always()
+
+    permissions:
+      id-token: write
+
+    needs:
+      - build-and-deploy
+
+    steps:
+      - name: Send Slack notification
+        uses: ruchira088/slack-github-action@v1
