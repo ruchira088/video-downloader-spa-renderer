@@ -1,0 +1,28 @@
+{
+  "name": "health-check-spa",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "VITE_BUILD_TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%M:%SZ') react-router build",
+    "start": "VITE_BUILD_TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%M:%SZ') react-router dev",
+    "typecheck": "react-router typegen && tsc"
+  },
+  "dependencies": {
+    "@react-router/node": "^7.5.3",
+    "@react-router/serve": "^7.5.3",
+    "axios": "^1.9.0",
+    "isbot": "^5.1.27",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router": "^7.5.3"
+  },
+  "devDependencies": {
+    "@react-router/dev": "^7.5.3",
+    "@types/node": "^22.15.19",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.3",
+    "vite-tsconfig-paths": "^5.1.4"
+  }
+}
