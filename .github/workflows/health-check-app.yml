@@ -20,7 +20,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: ./health-check-app
+        working-directory: ./health-check-spa
 
     steps:
       - name: Checkout code
@@ -29,7 +29,7 @@ jobs:
       - name: Set up NodeJS
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
@@ -49,11 +49,11 @@ jobs:
         uses: hashicorp/setup-terraform@v3
 
       - name: Initialise Terraform
-        working-directory: ./health-check-app/terraform
+        working-directory: ./health-check-spa/terraform
         run: terraform init
 
       - name: Apply Terraform
-        working-directory: ./health-check-app/terraform
+        working-directory: ./health-check-spa/terraform
         run: terraform apply -auto-approve
 
   send-notification:
