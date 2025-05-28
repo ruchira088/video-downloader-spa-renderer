@@ -4,18 +4,17 @@ import {z} from "zod"
 
 const RenderRequest = z.object({
     url: z.string(),
-    readyCssSelectors: z.string().array().optional()
+    readyCssSelectors: z.string().array().nullish()
 })
 
 type RenderRequest = z.infer<typeof RenderRequest>
 
-const JsExecutionRequest = RenderRequest.and(z.object({
-    script: z.string()
-}))
+const JsExecutionRequest =
+    RenderRequest.and(z.object({script: z.string()}))
 
 type JsExecutionRequest = z.infer<typeof JsExecutionRequest>
 
-export const create = (renderingService: RenderingService): Router => {
+export const createRenderRouter = (renderingService: RenderingService): Router => {
     const createResponse = (response: Response, result: Promise<unknown>): Promise<Response> =>
         result
             .then(data => response.status(200).send(data))

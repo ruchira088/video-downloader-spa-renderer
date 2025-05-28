@@ -1,20 +1,28 @@
-import {applicationConfiguration} from "./config/ApplicationConfiguration"
+import {Browser} from "puppeteer"
+import {Express} from "express"
+import {Logger} from "winston"
+import {ApplicationConfiguration, createApplicationConfiguration} from "./config/ApplicationConfiguration"
 import {defaultClock} from "./utils/Clock"
-import * as Logger from "./logger/Logger"
-import {httpApplication} from "./app"
+import {create as createLogger} from "./logger/Logger"
+import {createHttpApplication} from "./app"
 import {launchBrowser} from "./services/RenderingService"
 
-const logger = Logger.create(__filename)
+const logger: Logger = createLogger(__filename)
 
-const configuration = applicationConfiguration(process.env)
-
-launchBrowser()
-    .then(browser => httpApplication(browser, defaultClock, configuration))
-    .then(app => {
-        const {host, port} = configuration.httpConfiguration
+const main = async (applicationConfiguration: ApplicationConfiguration): Promise<void> => {
+    try {
+        const browser: Browser = await launchBrowser()
+        const app: Express = await createHttpApplication(browser, defaultClock, applicationConfiguration)
+        const {host, port} = applicationConfiguration.httpConfiguration
 
         app.listen(port, host, () => {
             logger.info(`Server started at http://${host}:${port}`)
         })
-    })
-    .catch(error => logger.error(error))
+    } catch (error) {
+        logger.error(error)
+    }
+}
+
+const configuration = createApplicationConfiguration(process.env)
+
+main(configuration)

@@ -1,17 +1,16 @@
 import request from "supertest"
-import {httpApplication} from "./app"
+import {createHttpApplication} from "./app"
 import {HEALTH_CHECK_READY_CSS_SELECTORS, HEALTH_CHECK_URL} from "./services/HealthService"
 import {defaultClock} from "./utils/Clock"
-import {applicationConfiguration} from "./config/ApplicationConfiguration"
+import {createApplicationConfiguration} from "./config/ApplicationConfiguration"
 import {launchBrowser} from "./services/RenderingService"
 import jsdom from "jsdom"
-import {Browser, Page} from "puppeteer";
-
+import {Browser, Page} from "puppeteer"
 
 describe("Testing HTTP application", () => {
     test("Retrieving the HTML markup of the health check SPA service", async () => {
         const browser = await launchBrowser()
-        const app = await httpApplication(browser, defaultClock, applicationConfiguration(process.env))
+        const app = await createHttpApplication(browser, defaultClock, createApplicationConfiguration(process.env))
 
         const response =
             await request(app)
@@ -32,7 +31,7 @@ describe("Testing HTTP application", () => {
 
     test("Returns request body validation error messages", async () => {
         const browser: Browser = {newPage: jest.fn() as () => Promise<Page>} as Browser
-        const app = await httpApplication(browser, defaultClock, applicationConfiguration(process.env))
+        const app = await createHttpApplication(browser, defaultClock, createApplicationConfiguration(process.env))
 
         const response =
             await request(app)

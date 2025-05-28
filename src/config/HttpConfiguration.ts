@@ -1,13 +1,21 @@
-import {Maybe} from "monet"
+import {z} from "zod/v4"
+import {filter, map} from "../utils/Helpers"
 
-export interface HttpConfiguration {
-    readonly port: number
-    readonly host: string
-}
+export const HttpConfiguration = z.object({
+    port: z.int(),
+    host: z.ipv4()
+})
 
-export const httpConfiguration = (env: NodeJS.ProcessEnv) => {
-    const port: number = Maybe.fromNull(env.HTTP_PORT).map(stringValue => parseInt(stringValue, 10)).orJust(8000)
-    const host: string = Maybe.fromNull(env.HTTP_HOST).orJust("0.0.0.0")
+export type HttpConfiguration = z.infer<typeof HttpConfiguration>
 
-    return {port, host}
+export const httpConfiguration = (env: NodeJS.ProcessEnv): HttpConfiguration => {
+    const port: number =
+        map(
+            filter(env.HTTP_PORT?.trim(), value => value !== ""),
+            value => parseInt(value, 10)
+        ) ?? 8000
+
+    const host: string = filter(env.HTTP_HOST?.trim(), value => value !== "") ?? "0.0.0.0"
+
+    return HttpConfiguration.parse({port, host})
 }

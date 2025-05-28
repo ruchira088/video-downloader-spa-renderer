@@ -1,12 +1,9 @@
-import {Moment} from "moment/moment"
-import moment from "moment"
-
 export interface Clock {
-    timestamp(): Moment
+    timestamp(): Date
 }
 
 export const defaultClock: Clock = {
-    timestamp(): moment.Moment {
-        return moment()
+    timestamp(): Date {
+        return new Date()
     }
 }
