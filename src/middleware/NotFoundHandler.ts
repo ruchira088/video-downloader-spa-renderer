@@ -1,6 +1,6 @@
-import {NextFunction, Request, Response} from "express"
+import {Request, Response} from "express"
 
-const notFoundHandler = (request: Request, response: Response, next: NextFunction) => {
+const notFoundHandler = (request: Request, response: Response) => {
     response.status(404).json({
         errorMessage: [ `Endpoint not found at ${request.originalUrl}` ]
     })

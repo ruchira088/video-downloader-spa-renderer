@@ -1,10 +1,10 @@
-import {NextFunction, Request, Response} from "express"
+import {Request, Response} from "express"
 import {create as createLogger} from "../logger/Logger"
 import {ZodError} from "zod"
 
 const logger = createLogger(__filename)
 
-const errorHandler = (error: Error, request: Request, response: Response, next: NextFunction) => {
+const errorHandler = (error: Error, request: Request, response: Response) => {
 
     if (error instanceof ZodError) {
         const zodError = error as ZodError

@@ -48,7 +48,7 @@ export const createHealthService =
                 buildTimestamp: buildInformation.buildTimestamp?.toISOString() ?? "Unknown"
             }
         },
-        async healthCheck(): Promise<HealthCheck & { [key: string]: HealthStatus }> {
+        async healthCheck(): Promise<HealthCheck> {
             const internetConnectivity: Promise<HealthStatus> =
                 client.get(HEALTH_CHECK_URL)
                     .then<HealthStatus>(response => response.status === 200 ? HealthStatus.Healthy : HealthStatus.Unhealthy)

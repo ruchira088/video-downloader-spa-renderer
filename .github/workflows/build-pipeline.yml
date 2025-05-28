@@ -30,6 +30,9 @@ jobs:
       - name: Transpile TypeScript
         run: npm run clean-compile
 
+      - name: Linting
+        run: npm run lint
+
       - name: Execute test suite
         run: npm test
 
