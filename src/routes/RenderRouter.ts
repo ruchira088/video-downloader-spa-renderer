@@ -1,6 +1,6 @@
 import express, {Request, Response, Router} from "express"
 import {RenderingService} from "../services/RenderingService"
-import {z} from "zod"
+import {z} from "zod/v4"
 
 const RenderRequest = z.object({
     url: z.string(),
@@ -26,9 +26,12 @@ export const createRenderRouter = (renderingService: RenderingService): Router =
         .post("/", (request: Request, response: Response) => {
             const {url, readyCssSelectors}: RenderRequest = RenderRequest.parse(request.body)
 
-            createResponse(response, renderingService.render(url, readyCssSelectors))
+            createResponse(
+                response,
+                renderingService.render(url, readyCssSelectors)
+            )
         })
-        .post("/execute", async (request: Request, response: Response) => {
+        .post("/execute", (request: Request, response: Response) => {
             const {url, script, readyCssSelectors}: JsExecutionRequest = JsExecutionRequest.parse(request.body)
 
             createResponse(

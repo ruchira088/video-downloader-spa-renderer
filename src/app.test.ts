@@ -45,9 +45,8 @@ describe("Testing HTTP application", () => {
             errorMessage: [{
                 code: "invalid_type",
                 expected: "string",
-                message: "Required",
-                path: ["url"],
-                received: "undefined"
+                message: "Invalid input: expected string, received undefined",
+                path: [ "url" ]
             }]
         })
     })
