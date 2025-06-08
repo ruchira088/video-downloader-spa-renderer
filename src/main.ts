@@ -1,29 +1,25 @@
-import {Browser} from "puppeteer"
-import {Express} from "express"
 import {Logger} from "winston"
 import {ApplicationConfiguration, createApplicationConfiguration} from "./config/ApplicationConfiguration"
-import {defaultClock} from "./utils/Clock"
-import packageJson from "../package.json"
 import {create as createLogger} from "./logger/Logger"
-import {createHttpApplication} from "./app"
-import {launchBrowser} from "./services/RenderingService"
+import {createExpressApp} from "./app"
+import {Express} from "express"
+import {Server} from "node:http"
 
 const logger: Logger = createLogger(__filename)
 
-const main = async (applicationConfiguration: ApplicationConfiguration): Promise<void> => {
-    try {
-        const browser: Browser = await launchBrowser()
-        const app: Express = await createHttpApplication(browser, defaultClock, applicationConfiguration, packageJson)
-        const {host, port} = applicationConfiguration.httpConfiguration
+const applicationConfiguration: ApplicationConfiguration = createApplicationConfiguration(process.env)
+const expressApp: Express = createExpressApp(applicationConfiguration)
 
-        app.listen(port, host, () => {
-            logger.info(`Server started at http://${host}:${port}`)
-        })
-    } catch (error) {
-        logger.error(error)
-    }
-}
+const {host, port} = applicationConfiguration.httpConfiguration
 
-const configuration = createApplicationConfiguration(process.env)
+const server: Server = expressApp.listen(port, host, () => {
+    logger.info(`Server started at http://${host}:${port}`)
+})
 
-main(configuration)
+process.on("SIGTERM", () => {
+    logger.info("Received SIGTERM signal. Shutting down server...")
+
+    server.close(() => {
+        logger.info("Server stopped")
+    })
+})

@@ -1,8 +1,9 @@
 import {AxiosInstance} from "axios"
+import {create as createLogger} from "../logger/Logger"
+import {Logger} from "winston"
 import {BuildInformation} from "../config/BuildInformation"
 import {Clock} from "../utils/Clock"
 import {RenderingService} from "./RenderingService"
-import * as Logger from "../logger/Logger"
 import {withTimeout} from "../utils/Helpers"
 
 type ApplicationInformation = {
@@ -13,6 +14,7 @@ type ApplicationInformation = {
     readonly gitCommit: string
     readonly buildTimestamp: string
 }
+
 export enum HealthStatus {
     Healthy = "healthy",
     Unhealthy = "unhealthy"
@@ -34,7 +36,7 @@ export interface HealthService {
     healthCheck(): Promise<HealthCheck>
 }
 
-const logger = Logger.create(__filename)
+const logger: Logger = createLogger(__filename)
 
 export const HEALTH_CHECK_URL = "https://spa-health-check.ruchij.com"
 export const HEALTH_CHECK_READY_CSS_SELECTORS = ["#text-field", ".class-name", ".deferred-class-name"]

@@ -10,17 +10,19 @@ export interface RenderingService {
     execute(url: string, js: string, readyCssSelectors: Optional<string[]>): Promise<string>
 }
 
-const logger: Logger = createLogger(__filename)
-
 export const launchBrowser =
     (): Promise<Browser> => puppeteer.launch({args: ["--disable-dev-shm-usage", "--no-sandbox"], headless: true})
 
-export const createRenderingService = async (browser: Browser, clock: Clock): Promise<RenderingService> => {
-    async function run<A>(url: string, readyCssSelectors: Optional<string[]>, execute: (page: Page) => Promise<A>, action: string): Promise<A> {
-        const startTime = clock.timestamp()
+const logger: Logger = createLogger(__filename)
+
+export class PuppeteerRenderingService implements RenderingService {
+    constructor(private readonly clock: Clock) {}
+
+    async run<A>(url: string, readyCssSelectors: Optional<string[]>, execute: (page: Page) => Promise<A>, action: string): Promise<A> {
+        const startTime = this.clock.timestamp()
 
         logger.info(`Rendering url=${url} with readyCssSelectors=[${readyCssSelectors?.join(", ") || ""}]`)
-
+        const browser = await launchBrowser()
         const page = await browser.newPage()
 
         const hasReadyCssSelectors =
@@ -45,23 +47,22 @@ export const createRenderingService = async (browser: Browser, clock: Clock): Pr
 
             const result: A = await execute(page)
 
-            const endTime = clock.timestamp()
+            const endTime = this.clock.timestamp()
             const duration = endTime.getTime() - startTime.getTime()
 
             logger.info(`Successfully ${action} url=${url} duration=${duration}ms`)
 
             return result
         } finally {
-            await page.close()
+            await browser.close()
         }
     }
 
-    return ({
-        render(url: string, readyCssSelectors: Optional<string[]>): Promise<string> {
-            return run(url, readyCssSelectors, page => page.content(), "rendered")
-        },
-        execute(url: string, js: string, readyCssSelectors: Optional<string[]>): Promise<string> {
-            return run(url, readyCssSelectors, page => page.evaluate(js) as Promise<string>, "executed JS")
-        }
-    })
+    render(url: string, readyCssSelectors: Optional<string[]>): Promise<string> {
+        return this.run(url, readyCssSelectors, page => page.content(), "rendered")
+    }
+
+    execute(url: string, js: string, readyCssSelectors: Optional<string[]>): Promise<string> {
+        return this.run(url, readyCssSelectors, page => page.evaluate(js) as Promise<string>, "executed JS")
+    }
 }
