@@ -6,8 +6,9 @@
     "build": "VITE_BUILD_TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%M:%SZ') react-router build",
     "start": "VITE_BUILD_TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%M:%SZ') react-router dev",
     "typecheck": "react-router typegen && tsc",
-    "lint": "eslint app",
-    "prettier": "prettier . --check"
+    "lint": "eslint src",
+    "prettier": "prettier . --check",
+    "prettier:fix": "prettier . --write"
   },
   "dependencies": {
     "@react-router/node": "^7.5.3",

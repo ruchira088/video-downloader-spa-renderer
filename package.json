@@ -13,6 +13,7 @@
     "test": "jest --runInBand",
     "lint": "eslint src",
     "prettier": "prettier . --check",
+    "prettier:fix": "prettier . --write",
     "release": "node release/index.js"
   },
   "dependencies": {
