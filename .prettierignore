@@ -1,0 +1,11 @@
+# Ignore artifacts:
+.git
+build
+coverage
+.idea
+node_modules
+package.json
+package-lock.json
+health-check-spa
+playbooks
+
