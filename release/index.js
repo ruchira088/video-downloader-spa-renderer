@@ -11,24 +11,35 @@ const SNAPSHOT = "SNAPSHOT"
 
 const packageJsonPath = path.resolve(__dirname, "../", "package.json")
 
-const askQuestion = (text, cli) => new Promise((resolve) => cli.question(text, resolve))
+const askQuestion = (text, cli) =>
+  new Promise((resolve) => cli.question(text, resolve))
 
-const retrievePackageJson = () => promisify(readFile)(packageJsonPath, "utf8").then(JSON.parse)
+const retrievePackageJson = () =>
+  promisify(readFile)(packageJsonPath, "utf8").then(JSON.parse)
 
 const updatePackageJson = (json) =>
   retrievePackageJson()
     .then((packageJson) => ({ ...packageJson, ...json }))
-    .then((packageJson) => promisify(writeFile)(packageJsonPath, JSON.stringify(packageJson, null, 2)))
+    .then((packageJson) =>
+      promisify(writeFile)(
+        packageJsonPath,
+        JSON.stringify(packageJson, null, 2)
+      )
+    )
 
-const createProductionVersion = (appVersion) => appVersion.replace(`-${SNAPSHOT}`, "")
+const createProductionVersion = (appVersion) =>
+  appVersion.replace(`-${SNAPSHOT}`, "")
 
 const incrementVersion = (appVersion) => {
-  const [major, minor, patch] = appVersion.split(".").map((value) => parseInt(value, 10))
+  const [major, minor, patch] = appVersion
+    .split(".")
+    .map((value) => parseInt(value, 10))
 
   return [major, minor, patch + 1].join(".")
 }
 
-const createSnapshotVersion = (appVersion) => (appVersion.endsWith(SNAPSHOT) ? appVersion : `${appVersion}-${SNAPSHOT}`)
+const createSnapshotVersion = (appVersion) =>
+  appVersion.endsWith(SNAPSHOT) ? appVersion : `${appVersion}-${SNAPSHOT}`
 
 const createVersion = (git, cli) =>
   git
@@ -42,8 +53,12 @@ const createVersion = (git, cli) =>
     })
     .then(() => retrievePackageJson())
     .then((json) =>
-      askQuestion(`Release version [${createProductionVersion(json.version)}]? `, cli).then(
-        (inputVersion) => inputVersion.trim() || createProductionVersion(json.version)
+      askQuestion(
+        `Release version [${createProductionVersion(json.version)}]? `,
+        cli
+      ).then(
+        (inputVersion) =>
+          inputVersion.trim() || createProductionVersion(json.version)
       )
     )
     .then((version) =>
@@ -64,8 +79,13 @@ const createVersion = (git, cli) =>
     )
     .then(() => retrievePackageJson())
     .then((json) =>
-      askQuestion(`Next version [${createSnapshotVersion(incrementVersion(json.version))}]? `, cli).then(
-        (nextVersion) => nextVersion.trim() || createSnapshotVersion(incrementVersion(json.version))
+      askQuestion(
+        `Next version [${createSnapshotVersion(incrementVersion(json.version))}]? `,
+        cli
+      ).then(
+        (nextVersion) =>
+          nextVersion.trim() ||
+          createSnapshotVersion(incrementVersion(json.version))
       )
     )
     .then((version) =>
@@ -76,7 +96,10 @@ const createVersion = (git, cli) =>
         .then(() => version)
     )
 
-const cli = readLine.createInterface({ input: process.stdin, output: process.stdout })
+const cli = readLine.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+})
 const simpleGit = new SimpleGit()
 
 createVersion(simpleGit, cli)

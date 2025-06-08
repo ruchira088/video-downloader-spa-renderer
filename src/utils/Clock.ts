@@ -1,9 +1,9 @@
 export interface Clock {
-    timestamp(): Date
+  timestamp(): Date
 }
 
 export const defaultClock: Clock = {
-    timestamp(): Date {
-        return new Date()
-    }
+  timestamp(): Date {
+    return new Date()
+  },
 }

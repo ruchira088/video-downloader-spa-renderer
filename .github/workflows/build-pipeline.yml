@@ -33,6 +33,9 @@ jobs:
       - name: Linting
         run: npm run lint
 
+      - name: Run prettier
+        run: npm run prettier
+
       - name: Execute test suite
         run: npm test
 
