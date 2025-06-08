@@ -5,7 +5,9 @@
   "scripts": {
     "build": "VITE_BUILD_TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%M:%SZ') react-router build",
     "start": "VITE_BUILD_TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%M:%SZ') react-router dev",
-    "typecheck": "react-router typegen && tsc"
+    "typecheck": "react-router typegen && tsc",
+    "lint": "eslint app",
+    "prettier": "prettier . --check"
   },
   "dependencies": {
     "@react-router/node": "^7.5.3",
@@ -21,7 +23,11 @@
     "@types/node": "^22.15.19",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
+    "eslint": "^9.28.0",
+    "eslint-config-prettier": "^10.1.5",
+    "prettier": "^3.5.3",
     "typescript": "^5.8.3",
+    "typescript-eslint": "^8.33.1",
     "vite": "^6.3.3",
     "vite-tsconfig-paths": "^5.1.4"
   }

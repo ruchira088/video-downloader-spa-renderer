@@ -1,0 +1,11 @@
+# Ignore artifacts:
+.git
+build
+coverage
+.idea
+.react-router
+terraform
+node_modules
+package.json
+package-lock.json
+
