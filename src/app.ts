@@ -3,16 +3,24 @@ import {ApplicationConfiguration} from "./config/ApplicationConfiguration"
 import {createServiceRouter} from "./routes/ServiceRouter"
 import {createRenderRouter} from "./routes/RenderRouter"
 import {createRenderingService, RenderingService} from "./services/RenderingService"
-import {createHealthService, HealthService} from "./services/HealthService"
+import {HealthServiceImpl, PackageJson} from "./services/HealthService"
 import notFoundHandler from "./middleware/NotFoundHandler"
 import errorHandler from "./middleware/ErrorHandler"
 import {Clock} from "./utils/Clock"
 import {Browser} from "puppeteer"
+import axios from "axios";
 
 export const createHttpApplication =
-    async (browser: Browser, clock: Clock, applicationConfiguration: ApplicationConfiguration): Promise<Express> => {
+    async (browser: Browser, clock: Clock, applicationConfiguration: ApplicationConfiguration, packageJson: PackageJson): Promise<Express> => {
+        const axiosInstance = axios.create({timeout: 10_000})
         const renderingService: RenderingService = await createRenderingService(browser, clock)
-        const healthService: HealthService = createHealthService(renderingService, applicationConfiguration.serviceInformation, clock)
+        const healthService = new HealthServiceImpl(
+            renderingService,
+            axiosInstance,
+            packageJson,
+            applicationConfiguration.buildInformation,
+            clock
+        )
 
         const app = express()
 

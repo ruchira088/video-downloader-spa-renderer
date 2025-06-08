@@ -4,13 +4,14 @@ import {HEALTH_CHECK_READY_CSS_SELECTORS, HEALTH_CHECK_URL} from "./services/Hea
 import {defaultClock} from "./utils/Clock"
 import {createApplicationConfiguration} from "./config/ApplicationConfiguration"
 import {launchBrowser} from "./services/RenderingService"
+import packageJson from "../package.json"
 import jsdom from "jsdom"
 import {Browser, Page} from "puppeteer"
 
 describe("Testing HTTP application", () => {
     test("Retrieving the HTML markup of the health check SPA service", async () => {
         const browser = await launchBrowser()
-        const app = await createHttpApplication(browser, defaultClock, createApplicationConfiguration(process.env))
+        const app = await createHttpApplication(browser, defaultClock, createApplicationConfiguration(process.env), packageJson)
 
         const response =
             await request(app)
@@ -31,7 +32,7 @@ describe("Testing HTTP application", () => {
 
     test("Returns request body validation error messages", async () => {
         const browser: Browser = {newPage: jest.fn() as () => Promise<Page>} as Browser
-        const app = await createHttpApplication(browser, defaultClock, createApplicationConfiguration(process.env))
+        const app = await createHttpApplication(browser, defaultClock, createApplicationConfiguration(process.env), packageJson)
 
         const response =
             await request(app)

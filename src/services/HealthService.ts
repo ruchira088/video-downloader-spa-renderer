@@ -1,9 +1,9 @@
-import axios from "axios"
+import {AxiosInstance} from "axios"
 import {BuildInformation} from "../config/BuildInformation"
 import {Clock} from "../utils/Clock"
 import {RenderingService} from "./RenderingService"
-import packageJson from "../../package.json"
 import * as Logger from "../logger/Logger"
+import {withTimeout} from "../utils/Helpers"
 
 type ApplicationInformation = {
     readonly name: string
@@ -13,10 +13,19 @@ type ApplicationInformation = {
     readonly gitCommit: string
     readonly buildTimestamp: string
 }
-
 export enum HealthStatus {
     Healthy = "healthy",
     Unhealthy = "unhealthy"
+}
+
+export type HealthCheck = {
+    readonly internetConnectivity: HealthStatus
+    readonly spaRendering: HealthStatus
+}
+
+export type PackageJson = {
+    readonly name: string
+    readonly version: string
 }
 
 export interface HealthService {
@@ -25,48 +34,54 @@ export interface HealthService {
     healthCheck(): Promise<HealthCheck>
 }
 
-export type HealthCheck = {
-    readonly internetConnectivity: HealthStatus
-    readonly spaRendering: HealthStatus
-}
-
 const logger = Logger.create(__filename)
-const client = axios.create({timeout: 30_000})
 
 export const HEALTH_CHECK_URL = "https://spa-health-check.ruchij.com"
 export const HEALTH_CHECK_READY_CSS_SELECTORS = ["#text-field", ".class-name", ".deferred-class-name"]
 
-export const createHealthService =
-    (renderingService: RenderingService, buildInformation: BuildInformation, clock: Clock): HealthService => ({
-        serviceInformation(): ApplicationInformation {
-            return {
-                name: packageJson.name,
-                version: packageJson.version,
-                timestamp: clock.timestamp().toISOString(),
-                gitBranch: buildInformation.gitBranch,
-                gitCommit: buildInformation.gitCommit,
-                buildTimestamp: buildInformation.buildTimestamp?.toISOString() ?? "Unknown"
-            }
-        },
-        async healthCheck(): Promise<HealthCheck> {
-            const internetConnectivity: Promise<HealthStatus> =
-                client.get(HEALTH_CHECK_URL)
-                    .then<HealthStatus>(response => response.status === 200 ? HealthStatus.Healthy : HealthStatus.Unhealthy)
-                    .catch(exception => {
-                        logger.error(`Health check failed for Internet connectivity url=${HEALTH_CHECK_URL}`, exception.message)
-                        return HealthStatus.Unhealthy
-                    })
+export class HealthServiceImpl implements HealthService {
+    constructor(
+        private readonly renderingService: RenderingService,
+        private readonly axiosInstance: AxiosInstance,
+        private readonly packageJson: PackageJson,
+        private readonly buildInformation: BuildInformation,
+        private readonly clock: Clock) {
+    }
 
-            const spaRendering: Promise<HealthStatus> = renderingService.render(HEALTH_CHECK_URL, HEALTH_CHECK_READY_CSS_SELECTORS)
+    serviceInformation(): ApplicationInformation {
+        return {
+            name: this.packageJson.name,
+            version: this.packageJson.version,
+            timestamp: this.clock.timestamp().toISOString(),
+            gitBranch: this.buildInformation.gitBranch,
+            gitCommit: this.buildInformation.gitCommit,
+            buildTimestamp: this.buildInformation.buildTimestamp?.toISOString() ?? "Unknown"
+        }
+    }
+
+    async healthCheck(): Promise<HealthCheck> {
+        const internetConnectivity: Promise<HealthStatus> =
+            this.axiosInstance.get(HEALTH_CHECK_URL)
+                .then<HealthStatus>(
+                    response =>
+                        response.status === 200 ? HealthStatus.Healthy : HealthStatus.Unhealthy
+                )
+                .catch(exception => {
+                    logger.error(`Health check failed for Internet connectivity url=${HEALTH_CHECK_URL}`, exception.message)
+                    return HealthStatus.Unhealthy
+                })
+
+        const spaRendering: Promise<HealthStatus> =
+            this.renderingService.render(HEALTH_CHECK_URL, HEALTH_CHECK_READY_CSS_SELECTORS)
                 .then<HealthStatus>(() => HealthStatus.Healthy)
                 .catch(exception => {
                     logger.error(`Health check failed for SPA rendering url=${HEALTH_CHECK_URL}`, exception.message)
                     return HealthStatus.Unhealthy
                 })
 
-            return {
-                internetConnectivity: await internetConnectivity,
-                spaRendering: await spaRendering
-            }
+        return {
+            internetConnectivity: await withTimeout(internetConnectivity, 5_000, HealthStatus.Unhealthy),
+            spaRendering: await withTimeout(spaRendering, 10_000, HealthStatus.Unhealthy)
         }
-    })
+    }
+}

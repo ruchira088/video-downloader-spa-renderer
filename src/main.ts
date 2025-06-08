@@ -3,6 +3,7 @@ import {Express} from "express"
 import {Logger} from "winston"
 import {ApplicationConfiguration, createApplicationConfiguration} from "./config/ApplicationConfiguration"
 import {defaultClock} from "./utils/Clock"
+import packageJson from "../package.json"
 import {create as createLogger} from "./logger/Logger"
 import {createHttpApplication} from "./app"
 import {launchBrowser} from "./services/RenderingService"
@@ -12,7 +13,7 @@ const logger: Logger = createLogger(__filename)
 const main = async (applicationConfiguration: ApplicationConfiguration): Promise<void> => {
     try {
         const browser: Browser = await launchBrowser()
-        const app: Express = await createHttpApplication(browser, defaultClock, applicationConfiguration)
+        const app: Express = await createHttpApplication(browser, defaultClock, applicationConfiguration, packageJson)
         const {host, port} = applicationConfiguration.httpConfiguration
 
         app.listen(port, host, () => {

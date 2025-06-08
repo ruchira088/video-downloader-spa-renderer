@@ -14,9 +14,9 @@ describe("ApplicationConfiguration", () => {
             expect(applicationConfiguration.httpConfiguration.host).toEqual("1.1.1.1")
             expect(applicationConfiguration.httpConfiguration.port).toEqual(1234)
 
-            expect(applicationConfiguration.serviceInformation.gitBranch).toEqual("git-branch")
-            expect(applicationConfiguration.serviceInformation.gitCommit).toEqual("git-commit")
-            expect(applicationConfiguration.serviceInformation.buildTimestamp).toEqual(new Date("2021-01-01T00:00:00.000Z"))
+            expect(applicationConfiguration.buildInformation.gitBranch).toEqual("git-branch")
+            expect(applicationConfiguration.buildInformation.gitCommit).toEqual("git-commit")
+            expect(applicationConfiguration.buildInformation.buildTimestamp).toEqual(new Date("2021-01-01T00:00:00.000Z"))
         })
     })
 })

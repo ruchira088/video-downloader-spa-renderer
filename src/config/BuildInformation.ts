@@ -15,7 +15,7 @@ export const BuildInformation = z.object({
 
 export type BuildInformation = z.infer<typeof BuildInformation>
 
-export const serviceInformation = (env: NodeJS.ProcessEnv): BuildInformation => {
+export const buildInformation = (env: NodeJS.ProcessEnv): BuildInformation => {
     const gitBranch = filter(env.GIT_BRANCH?.trim(), value => value !== "") ?? "my-branch"
     const gitCommit = filter(env.GIT_COMMIT?.trim(), value => value !== "") ?? "my-commit"
     const buildTimestamp = filter(env.BUILD_TIMESTAMP?.trim(), value => value !== "")

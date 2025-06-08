@@ -19,3 +19,13 @@ export const filter =
             return null
         }
     }
+
+export const sleep = (milliseconds: number): Promise<void> =>
+    new Promise(resolve => setTimeout(resolve, milliseconds))
+
+export const withTimeout =
+    <A>(promise: Promise<A>, timeout: number, onTimeout: A): Promise<A> =>
+        Promise.race([
+            promise,
+            sleep(timeout).then(() => onTimeout)
+        ])
