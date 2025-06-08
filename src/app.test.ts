@@ -1,12 +1,13 @@
 import request from "supertest"
-import {HEALTH_CHECK_READY_CSS_SELECTORS, HEALTH_CHECK_URL} from "./services/HealthService"
+import {HEALTH_CHECK_READY_CSS_SELECTORS, HEALTH_CHECK_URL, HealthService} from "./services/HealthService"
 import jsdom from "jsdom"
-import {createExpressApp} from "./app"
+import {createApp, createAppFromConfig} from "./app"
 import {createApplicationConfiguration} from "./config/ApplicationConfiguration"
+import {RenderingService} from "./services/RenderingService";
 
 describe("Testing HTTP application", () => {
     test("Retrieving the HTML markup of the health check SPA service", async () => {
-        const app = createExpressApp(createApplicationConfiguration(process.env))
+        const app = createAppFromConfig(createApplicationConfiguration(process.env))
 
         const response =
             await request(app)
@@ -24,13 +25,19 @@ describe("Testing HTTP application", () => {
     })
 
     test("Returns request body validation error messages", async () => {
-        const app = createExpressApp(createApplicationConfiguration(process.env))
+        const renderingService = {} as jest.Mocked<RenderingService>
+        renderingService.render = jest.fn()
+
+        const healthService = {} as jest.Mocked<HealthService>
+
+        const app = createApp(renderingService, healthService)
 
         const response =
             await request(app)
                 .post("/render")
                 .send({readyCssSelectors: HEALTH_CHECK_READY_CSS_SELECTORS})
 
+        expect(renderingService.render).not.toHaveBeenCalled()
         expect(response.status).toBe(400)
         expect(response.body).toStrictEqual({
             errorMessage: [{

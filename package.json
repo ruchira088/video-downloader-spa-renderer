@@ -10,8 +10,7 @@
     "execute": "node build/src/main.js",
     "start": "npm run clean-compile && npm run execute",
     "clean-compile": "npm run clean && npm run compile",
-    "test": "npm run clean && npm run jest",
-    "jest": "jest --runInBand",
+    "test": "jest --runInBand",
     "lint": "eslint src",
     "release": "node release/index.js"
   },

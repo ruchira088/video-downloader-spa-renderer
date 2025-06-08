@@ -1,17 +1,17 @@
 import express, {Express} from "express"
 import {PuppeteerRenderingService, RenderingService} from "./services/RenderingService"
-import {HealthServiceImpl} from "./services/HealthService"
 import {createServiceRouter} from "./routes/ServiceRouter"
 import {createRenderRouter} from "./routes/RenderRouter"
 import notFoundHandler from "./middleware/NotFoundHandler"
 import errorHandler from "./middleware/ErrorHandler"
-import {ApplicationConfiguration} from "./config/ApplicationConfiguration";
-import axios, {AxiosInstance} from "axios";
-import {defaultClock} from "./utils/Clock";
-import packageJson from "../package.json";
+import {ApplicationConfiguration} from "./config/ApplicationConfiguration"
+import axios, {AxiosInstance} from "axios"
+import {defaultClock} from "./utils/Clock"
+import packageJson from "../package.json"
+import {HealthService, HealthServiceImpl} from "./services/HealthService"
 
-const createApp =
-    (renderingService: RenderingService, healthService: HealthServiceImpl): Express => {
+export const createApp =
+    (renderingService: RenderingService, healthService: HealthService): Express => {
         const app: Express = express()
 
         app.use(express.json())
@@ -26,7 +26,7 @@ const createApp =
         return app
     }
 
-export const createExpressApp =
+export const createAppFromConfig =
     (applicationConfiguration: ApplicationConfiguration): Express => {
         const axiosInstance: AxiosInstance = axios.create({timeout: 10_000})
         const renderingService: RenderingService = new PuppeteerRenderingService(defaultClock)

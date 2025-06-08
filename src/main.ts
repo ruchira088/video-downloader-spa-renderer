@@ -1,14 +1,14 @@
 import {Logger} from "winston"
 import {ApplicationConfiguration, createApplicationConfiguration} from "./config/ApplicationConfiguration"
 import {create as createLogger} from "./logger/Logger"
-import {createExpressApp} from "./app"
+import {createAppFromConfig} from "./app"
 import {Express} from "express"
 import {Server} from "node:http"
 
 const logger: Logger = createLogger(__filename)
 
 const applicationConfiguration: ApplicationConfiguration = createApplicationConfiguration(process.env)
-const expressApp: Express = createExpressApp(applicationConfiguration)
+const expressApp: Express = createAppFromConfig(applicationConfiguration)
 
 const {host, port} = applicationConfiguration.httpConfiguration
 
