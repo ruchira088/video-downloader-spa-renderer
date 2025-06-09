@@ -35,6 +35,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Linting
+        run: npm run lint
+
+      - name: Run prettier
+        run: npm run prettier
+
       - name: Build project
         run: npm run build
 
