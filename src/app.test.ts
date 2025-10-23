@@ -1,13 +1,9 @@
 import request from "supertest"
-import {
-  HEALTH_CHECK_READY_CSS_SELECTORS,
-  HEALTH_CHECK_URL,
-  HealthService,
-} from "./services/HealthService"
-import jsdom from "jsdom"
-import { createApp, createAppFromConfig } from "./app"
-import { createApplicationConfiguration } from "./config/ApplicationConfiguration"
-import { RenderingService } from "./services/RenderingService"
+import {HEALTH_CHECK_READY_CSS_SELECTORS, HEALTH_CHECK_URL, HealthService,} from "./services/HealthService"
+import * as cheerio from "cheerio"
+import {createApp, createAppFromConfig} from "./app"
+import {createApplicationConfiguration} from "./config/ApplicationConfiguration"
+import {RenderingService} from "./services/RenderingService"
 
 describe("Testing HTTP application", () => {
   test("Retrieving the HTML markup of the health check SPA service", async () => {
@@ -20,18 +16,18 @@ describe("Testing HTTP application", () => {
 
     expect(response.status).toBe(200)
 
-    const { document } = new jsdom.JSDOM(response.text).window
+    const $: cheerio.CheerioAPI = cheerio.load(response.text)
 
-    expect(document.getElementById("text-field")?.textContent).toBe(
+    expect($("#text-field").text()).toBe(
       "ID specified"
     )
-    expect(document.querySelector(".class-name")?.textContent).toBe(
+    expect($(".class-name").text()).toBe(
       "Class specified"
     )
-    expect(document.querySelector(".deferred-class-name")?.textContent).toBe(
+    expect($(".deferred-class-name").text()).toBe(
       "Hello World"
     )
-    expect(document.getElementById("build-timestamp")).toBeTruthy()
+    expect($("#build-timestamp")).toBeTruthy()
   })
 
   test("Returns request body validation error messages", async () => {
