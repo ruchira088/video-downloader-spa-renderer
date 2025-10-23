@@ -1,9 +1,13 @@
 import request from "supertest"
-import {HEALTH_CHECK_READY_CSS_SELECTORS, HEALTH_CHECK_URL, HealthService,} from "./services/HealthService"
+import {
+  HEALTH_CHECK_READY_CSS_SELECTORS,
+  HEALTH_CHECK_URL,
+  HealthService,
+} from "./services/HealthService"
 import * as cheerio from "cheerio"
-import {createApp, createAppFromConfig} from "./app"
-import {createApplicationConfiguration} from "./config/ApplicationConfiguration"
-import {RenderingService} from "./services/RenderingService"
+import { createApp, createAppFromConfig } from "./app"
+import { createApplicationConfiguration } from "./config/ApplicationConfiguration"
+import { RenderingService } from "./services/RenderingService"
 
 describe("Testing HTTP application", () => {
   test("Retrieving the HTML markup of the health check SPA service", async () => {
@@ -18,15 +22,9 @@ describe("Testing HTTP application", () => {
 
     const $: cheerio.CheerioAPI = cheerio.load(response.text)
 
-    expect($("#text-field").text()).toBe(
-      "ID specified"
-    )
-    expect($(".class-name").text()).toBe(
-      "Class specified"
-    )
-    expect($(".deferred-class-name").text()).toBe(
-      "Hello World"
-    )
+    expect($("#text-field").text()).toBe("ID specified")
+    expect($(".class-name").text()).toBe("Class specified")
+    expect($(".deferred-class-name").text()).toBe("Hello World")
     expect($("#build-timestamp")).toBeTruthy()
   })
 
