@@ -9,9 +9,6 @@
         replica_count: 2
         aws_ssm_k8s_config: /infrastructure/prod/k8s/config
 
-    - name: Set config values and secrets
-      import_tasks: tasks/configs-and-secrets.yml
-
     - name: Create GitHub release
       import_tasks: tasks/github-release.yml
 
