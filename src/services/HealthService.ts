@@ -8,7 +8,6 @@ import { withTimeout } from "../utils/Helpers"
 
 type ApplicationInformation = {
   readonly name: string
-  readonly version: string
   readonly timestamp: string
   readonly gitBranch: string
   readonly gitCommit: string
@@ -27,7 +26,6 @@ export type HealthCheck = {
 
 export type PackageJson = {
   readonly name: string
-  readonly version: string
 }
 
 export interface HealthService {
@@ -57,7 +55,6 @@ export class HealthServiceImpl implements HealthService {
   serviceInformation(): ApplicationInformation {
     return {
       name: this.packageJson.name,
-      version: this.packageJson.version,
       timestamp: this.clock.timestamp().toISOString(),
       gitBranch: this.buildInformation.gitBranch,
       gitCommit: this.buildInformation.gitCommit,

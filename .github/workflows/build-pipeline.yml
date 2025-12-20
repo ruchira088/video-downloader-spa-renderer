@@ -100,12 +100,13 @@ jobs:
           role-session-name: backend-deploy
           role-to-assume: "arn:aws:iam::365562660444:role/github_iam_role"
 
-      - name: Deploy to K8s server
-        run: ansible-playbook playbooks/k8s-deploy.yml
+      - name: Deploy to dev
+        run: ansible-playbook playbooks/dev-deploy.yml
 
   deploy-to-staging:
     name: Deploy to staging
     runs-on: ubuntu-latest
+    environment: Staging
 
     if: github.ref == 'refs/heads/main'
 
@@ -127,12 +128,13 @@ jobs:
           role-session-name: backend-deploy
           role-to-assume: "arn:aws:iam::365562660444:role/github_iam_role"
 
-      - name: Deploy to K8s server
-        run: ansible-playbook playbooks/k8s-deploy.yml
+      - name: Deploy to staging
+        run: ansible-playbook playbooks/staging-deploy.yml
 
   deploy-to-production:
     name: Deploy to production
     runs-on: ubuntu-latest
+    environment: Production
 
     if: github.ref == 'refs/heads/main'
 
@@ -154,8 +156,8 @@ jobs:
           role-session-name: backend-deploy
           role-to-assume: "arn:aws:iam::365562660444:role/github_iam_role"
 
-      - name: Deploy to K8s server
-        run: ansible-playbook playbooks/k8s-deploy.yml
+      - name: Deploy to production
+        run: ansible-playbook playbooks/production-deploy.yml
 
   send-notification:
     runs-on: ubuntu-latest

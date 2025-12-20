@@ -1,6 +1,5 @@
 {
   "name": "video-downloader-spa-renderer",
-  "version": "1.1.55-SNAPSHOT",
   "description": "Renders SPA pages",
   "license": "MIT",
   "scripts": {
@@ -13,8 +12,7 @@
     "test": "jest --runInBand",
     "lint": "eslint src",
     "prettier": "prettier . --check",
-    "prettier:fix": "prettier . --write",
-    "release": "node release/index.js"
+    "prettier:fix": "prettier . --write"
   },
   "dependencies": {
     "axios": "^1.9.0",
@@ -35,7 +33,6 @@
     "jest": "^30.0.0",
     "prettier": "^3.6.1",
     "rimraf": "^6.0.1",
-    "simple-git": "^3.27.0",
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.5",
     "typescript": "^5.8.3",
