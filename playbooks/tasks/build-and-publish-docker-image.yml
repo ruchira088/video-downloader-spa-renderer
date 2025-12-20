@@ -11,7 +11,7 @@
     src: docker/Dockerfile
     dest: output/docker/Dockerfile
   vars:
-    build_timestamp: "{{ ansible_date_time.iso8601 }}"
+    build_timestamp: "{{ ansible_facts['date_time']['iso8601'] }}"
 
 - name: Clean and build project
   shell: cd ../ && npm ci && npm run clean-compile

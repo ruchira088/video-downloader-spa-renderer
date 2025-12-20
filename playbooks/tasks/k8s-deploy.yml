@@ -6,20 +6,23 @@
 
 - name: Create output directory
   block:
+    - set_fact:
+        k8s_output_dir: .k8s-output
+
     - name: Delete existing output directory
       file:
-        path: k8s-output
+        path: "{{ k8s_output_dir }}"
         state: absent
 
     - name: Create directory
       file:
-        path: k8s-output
+        path: "{{ k8s_output_dir }}"
         state: directory
 
 - name: Render K8s resource files
   template:
     src: "{{ item }}"
-    dest: output/k8s/{{ item | basename }}
+    dest: "{{ k8s_output_dir }}/{{ item | basename }}"
   with_fileglob:
     - k8s/*.yaml
   vars:
@@ -29,28 +32,28 @@
   block:
     - name: Set kubeconfig file location
       set_fact:
-        kubeconfig: output/kubeconfig
+        kubeconfig: "{{ k8s_output_dir }}/kubeconfig"
 
     - name: Create K8s config file
       copy:
         dest: "{{ kubeconfig }}"
         content: "{{ lookup('aws_ssm', aws_ssm_k8s_config, region='ap-southeast-2') }}"
 
-- name: Deploy K8s resources
-  block:
-    - name: Create Namespace
-      command: kubectl apply -f output/k8s/Namespace.yaml --kubeconfig {{ kubeconfig }}
-
-    - name: Create Docker registry secret
-      command: kubectl apply -f output/k8s/DockerRegistryCredentials.yaml --kubeconfig {{ kubeconfig }}
-
-    - name: Deploy application
-      command: kubectl apply -f output/k8s --kubeconfig {{ kubeconfig }}
-
-    - name: Wait for successful deployment
-      command: kubectl rollout status deployment spa-renderer-deployment --kubeconfig {{ kubeconfig }} -n {{ k8s_namespace }}
-
-- name: Clean up output directory
-  file:
-    path: k8s-output
-    state: absent
+#- name: Deploy K8s resources
+#  block:
+#    - name: Create Namespace
+#      command: "kubectl apply -f {{ k8s_output_dir }}/Namespace.yaml --kubeconfig {{ kubeconfig }}"
+#
+#    - name: Create Docker registry secret
+#      command: "kubectl apply -f {{ k8s_output_dir }}/DockerRegistryCredentials.yaml --kubeconfig {{ kubeconfig }}"
+#
+#    - name: Deploy application
+#      command: "kubectl apply -f {{ k8s_output_dir }}/*.yaml --kubeconfig {{ kubeconfig }}"
+#
+#    - name: Wait for successful deployment
+#      command: "kubectl rollout status deployment spa-renderer-deployment --kubeconfig {{ kubeconfig }} -n {{ k8s_namespace }}"
+#
+#- name: Clean up output directory
+#  file:
+#    path: "{{ k8s_output_dir }}"
+#    state: absent
