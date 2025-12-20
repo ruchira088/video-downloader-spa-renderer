@@ -8,7 +8,7 @@ spec:
     matchLabels:
       app: spa-renderer
       branch: "{{ git_branch }}"
-  replicas: "{{ replica_count }}"
+  replicas: {{ replica_count }}
   template:
     metadata:
       labels:
