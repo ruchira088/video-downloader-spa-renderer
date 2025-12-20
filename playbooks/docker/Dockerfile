@@ -27,6 +27,8 @@ RUN npm run clean-compile
 
 FROM node:lts-alpine
 
+WORKDIR /opt/app
+
 COPY --from=builder /opt/app/build /opt/app/build
 
 ADD package.json .
