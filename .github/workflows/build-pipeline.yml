@@ -76,11 +76,68 @@ jobs:
       - name: Build and Publish Docker image
         run: ansible-playbook playbooks/build-and-publish-docker-image.yml
 
-  deploy-to-k8s:
-    name: Deploy to K8s
+  deploy-to-dev:
+    name: Deploy to dev
     runs-on: ubuntu-latest
+
+    if: github.ref != 'refs/heads/main'
+
     needs:
       - build-and-publish-docker-image
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ap-southeast-2
+          role-session-name: backend-deploy
+          role-to-assume: "arn:aws:iam::365562660444:role/github_iam_role"
+
+      - name: Deploy to K8s server
+        run: ansible-playbook playbooks/k8s-deploy.yml
+
+  deploy-to-staging:
+    name: Deploy to staging
+    runs-on: ubuntu-latest
+
+    if: github.ref == 'refs/heads/main'
+
+    needs:
+      - build-and-publish-docker-image
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ap-southeast-2
+          role-session-name: backend-deploy
+          role-to-assume: "arn:aws:iam::365562660444:role/github_iam_role"
+
+      - name: Deploy to K8s server
+        run: ansible-playbook playbooks/k8s-deploy.yml
+
+  deploy-to-production:
+    name: Deploy to production
+    runs-on: ubuntu-latest
+
+    if: github.ref == 'refs/heads/main'
+
+    needs:
+      - deploy-to-staging
 
     permissions:
       contents: read
@@ -110,7 +167,9 @@ jobs:
     needs:
       - transpile-and-test
       - build-and-publish-docker-image
-      - deploy-to-k8s
+      - deploy-to-dev
+      - deploy-to-staging
+      - deploy-to-production
 
     steps:
       - name: Send Slack notification

@@ -1,0 +1,16 @@
+---
+- hosts: localhost
+  connection: local
+
+  tasks:
+    - name: Gather git information
+      import_tasks: tasks/git-info.yml
+
+    - set_fact:
+        k8s_namespace: "video-downloader-back-end-{{ git_branch }}"
+        hostname: "{{ git_branch }}.spa-renderer.video.home.ruchij.com"
+        aws_ssm_k8s_config: /infrastructure/dev/k8s/config
+        replica_count: 1
+
+    - name: Deploy to dev branch
+      import_tasks: tasks/k8s-deploy.yml

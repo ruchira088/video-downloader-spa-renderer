@@ -2,22 +2,22 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: spa-renderer-deployment
-  namespace: {{ namespace }}
+  namespace: "{{ k8s_namespace }}"
 spec:
   selector:
     matchLabels:
       app: spa-renderer
-      branch: {{ git_branch }}
-  replicas: {{ replica_count }}
+      branch: "{{ git_branch }}"
+  replicas: "{{ replica_count }}"
   template:
     metadata:
       labels:
         app: spa-renderer
-        branch: {{ git_branch }}
+        branch: "{{ git_branch }}"
     spec:
       containers:
         - name: spa-renderer-container
-          image: ghcr.io/ruchira088/video-downloader-spa-renderer:{{ git_branch }}-{{ git_commit }}
+          image: "ghcr.io/ruchira088/video-downloader-spa-renderer:{{ git_branch }}-{{ git_commit }}"
           readinessProbe:
             httpGet:
               port: expressjs-port

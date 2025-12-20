@@ -1,0 +1,56 @@
+- name: Install dependencies
+  import_tasks: tasks/install-dependencies.yml
+
+- name: Gather git information
+  import_tasks: tasks/git-info.yml
+
+- name: Create output directory
+  block:
+    - name: Delete existing output directory
+      file:
+        path: k8s-output
+        state: absent
+
+    - name: Create directory
+      file:
+        path: k8s-output
+        state: directory
+
+- name: Render K8s resource files
+  template:
+    src: "{{ item }}"
+    dest: output/k8s/{{ item | basename }}
+  with_fileglob:
+    - k8s/*.yaml
+  vars:
+    ghcr_credentials: "{{ lookup('aws_ssm', '/github/ghcr/docker-config', region='ap-southeast-2') }}"
+
+- name: Set kube_config
+  block:
+    - name: Set kubeconfig file location
+      set_fact:
+        kubeconfig: output/kubeconfig
+
+    - name: Create K8s config file
+      copy:
+        dest: "{{ kubeconfig }}"
+        content: "{{ lookup('aws_ssm', aws_ssm_k8s_config, region='ap-southeast-2') }}"
+
+- name: Deploy K8s resources
+  block:
+    - name: Create Namespace
+      command: kubectl apply -f output/k8s/Namespace.yaml --kubeconfig {{ kubeconfig }}
+
+    - name: Create Docker registry secret
+      command: kubectl apply -f output/k8s/DockerRegistryCredentials.yaml --kubeconfig {{ kubeconfig }}
+
+    - name: Deploy application
+      command: kubectl apply -f output/k8s --kubeconfig {{ kubeconfig }}
+
+    - name: Wait for successful deployment
+      command: kubectl rollout status deployment spa-renderer-deployment --kubeconfig {{ kubeconfig }} -n {{ k8s_namespace }}
+
+- name: Clean up output directory
+  file:
+    path: k8s-output
+    state: absent
