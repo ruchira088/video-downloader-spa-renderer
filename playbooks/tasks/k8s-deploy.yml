@@ -39,21 +39,21 @@
         dest: "{{ kubeconfig }}"
         content: "{{ lookup('aws_ssm', aws_ssm_k8s_config, region='ap-southeast-2') }}"
 
-#- name: Deploy K8s resources
-#  block:
-#    - name: Create Namespace
-#      command: "kubectl apply -f {{ k8s_output_dir }}/Namespace.yaml --kubeconfig {{ kubeconfig }}"
-#
-#    - name: Create Docker registry secret
-#      command: "kubectl apply -f {{ k8s_output_dir }}/DockerRegistryCredentials.yaml --kubeconfig {{ kubeconfig }}"
-#
-#    - name: Deploy application
-#      command: "kubectl apply -f {{ k8s_output_dir }}/*.yaml --kubeconfig {{ kubeconfig }}"
-#
-#    - name: Wait for successful deployment
-#      command: "kubectl rollout status deployment spa-renderer-deployment --kubeconfig {{ kubeconfig }} -n {{ k8s_namespace }}"
-#
-#- name: Clean up output directory
-#  file:
-#    path: "{{ k8s_output_dir }}"
-#    state: absent
+- name: Deploy K8s resources
+  block:
+    - name: Create Namespace
+      command: "kubectl apply -f {{ k8s_output_dir }}/Namespace.yaml --kubeconfig {{ kubeconfig }}"
+
+    - name: Create Docker registry secret
+      command: "kubectl apply -f {{ k8s_output_dir }}/DockerRegistryCredentials.yaml --kubeconfig {{ kubeconfig }}"
+
+    - name: Deploy application
+      command: "kubectl apply -f {{ k8s_output_dir }}/*.yaml --kubeconfig {{ kubeconfig }}"
+
+    - name: Wait for successful deployment
+      command: "kubectl rollout status deployment spa-renderer-deployment --kubeconfig {{ kubeconfig }} -n {{ k8s_namespace }}"
+
+- name: Clean up output directory
+  file:
+    path: "{{ k8s_output_dir }}"
+    state: absent
