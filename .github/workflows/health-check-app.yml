@@ -3,7 +3,7 @@ name: Deploy Health Check SPA
 on:
   push:
     branches:
-      - dev
+      - main
 
 concurrency:
   group: health-check-app-${{ github.ref }}
@@ -24,10 +24,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up NodeJS
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
@@ -45,7 +45,7 @@ jobs:
         run: npm run build
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           aws-region: ap-southeast-2
           role-session-name: backend-deploy
