@@ -1,6 +1,7 @@
 .idea
 
 node_modules
+.venv
 build
 
-playbooks/output
+.k8s-output
