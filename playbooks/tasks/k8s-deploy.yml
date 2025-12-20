@@ -48,7 +48,7 @@
       command: "kubectl apply -f {{ k8s_output_dir }}/DockerRegistryCredentials.yaml --kubeconfig {{ kubeconfig }}"
 
     - name: Deploy application
-      command: "kubectl apply -f {{ k8s_output_dir }}/*.yaml --kubeconfig {{ kubeconfig }}"
+      command: "kubectl apply -f {{ k8s_output_dir }} --kubeconfig {{ kubeconfig }}"
 
     - name: Wait for successful deployment
       command: "kubectl rollout status deployment spa-renderer-deployment --kubeconfig {{ kubeconfig }} -n {{ k8s_namespace }}"

@@ -1,7 +1,11 @@
 - name: Create output directory
-  file:
-    path: output/docker
-    state: directory
+  block:
+    - set_fact:
+        docker_output_dir: .docker-output
+
+    - file:
+        path: "{{ docker_output_dir }}"
+        state: directory
 
 - name: Gather git information
   import_tasks: git-info.yml
@@ -9,19 +13,16 @@
 - name: Render the Dockerfile
   template:
     src: docker/Dockerfile
-    dest: output/docker/Dockerfile
+    dest: "{{ docker_output_dir }}/Dockerfile"
   vars:
     build_timestamp: "{{ ansible_facts['date_time']['iso8601'] }}"
-
-- name: Clean and build project
-  shell: cd ../ && npm ci && npm run clean-compile
 
 - name: Build Docker image
   shell: |
     docker build \
       -t ghcr.io/ruchira088/video-downloader-spa-renderer:{{ git_branch }} \
       -t ghcr.io/ruchira088/video-downloader-spa-renderer:{{ git_branch }}-{{ git_commit }} \
-      -f output/docker/Dockerfile \
+      -f {{ docker_output_dir }}/Dockerfile \
       ../
   when: not publish
 
@@ -40,10 +41,10 @@
           --platform linux/arm64,linux/amd64 \
           -t ghcr.io/ruchira088/video-downloader-spa-renderer:{{ git_branch }} \
           -t ghcr.io/ruchira088/video-downloader-spa-renderer:{{ git_branch }}-{{ git_commit }} \
-          -f output/docker/Dockerfile \
+          -f {{ docker_output_dir }}/Dockerfile \
           ../
 
 - name: Cleanup output directory
   file:
-    path: output/docker
+    path: "{{ docker_output_dir }}"
     state: absent
