@@ -6,7 +6,7 @@
     - set_fact:
         k8s_namespace: video-downloader-back-end-staging
         hostname: staging.spa-renderer.video.home.ruchij.com
-        replica_count: 2
+        replica_count: 1
         aws_ssm_k8s_config: /infrastructure/dev/k8s/config
 
     - name: Deploy to staging

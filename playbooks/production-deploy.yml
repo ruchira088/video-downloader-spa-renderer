@@ -9,8 +9,8 @@
         replica_count: 2
         aws_ssm_k8s_config: /infrastructure/prod/k8s/config
 
-    - name: Create GitHub release
-      import_tasks: tasks/github-release.yml
-
     - name: Deploy to production
       import_tasks: tasks/k8s-deploy.yml
+
+    - name: Create GitHub release
+      import_tasks: tasks/github-release.yml
