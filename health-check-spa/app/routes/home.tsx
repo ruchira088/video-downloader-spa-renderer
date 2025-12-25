@@ -21,7 +21,7 @@ const App: FC = () => {
         axios
           .get("/response.json")
           .then((response) => setLabel(response.data.input)),
-      1000
+      100
     )
 
     return () => clearTimeout(id)
