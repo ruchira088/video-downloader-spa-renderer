@@ -1,5 +1,7 @@
 FROM node:lts-alpine as builder
 
+RUN apk add git
+
 WORKDIR /opt/app
 
 ADD package.json .
@@ -9,6 +11,9 @@ RUN npm ci
 
 ADD tsconfig.json .
 ADD src src
+ADD config config
+ADD scripts scripts
+ADD .git .git
 
 RUN npm run clean-compile
 
@@ -24,10 +29,10 @@ RUN apk add --no-cache \
       ca-certificates \
       ttf-freefont
 
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true
-ENV PUPPETEER_EXECUTABLE_PATH /usr/bin/chromium-browser
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD="true"
+ENV PUPPETEER_EXECUTABLE_PATH="/usr/bin/chromium-browser"
 
-WORKDIR /opt/app
+WORKDIR /opt/app/build
 
 ADD package.json .
 ADD package-lock.json .
@@ -36,8 +41,8 @@ RUN npm ci --omit=dev
 
 COPY --from=builder /opt/app/build /opt/app/build
 
-ENV GIT_COMMIT "{{ git_commit }}"
-ENV GIT_BRANCH "{{ git_branch }}"
+ENV GIT_COMMIT="{{ git_commit }}"
+ENV GIT_BRANCH="{{ git_branch }}"
 
 ENTRYPOINT ["npm", "run"]
 

@@ -6,7 +6,7 @@
     "compile": "tsc && npm run setup-config",
     "compile:watch": "tsc -w",
     "clean": "rimraf build",
-    "execute": "node build/src/main.js",
+    "execute": "node src/main.js",
     "start": "ts-node src/main.ts",
     "setup-config": "cp -r config build/config && npm run build-info",
     "build-info": "ts-node scripts/build-info.ts",
