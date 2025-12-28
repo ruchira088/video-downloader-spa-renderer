@@ -1,4 +1,5 @@
 import request from "supertest"
+import config from "config"
 import {
   HEALTH_CHECK_READY_CSS_SELECTORS,
   HEALTH_CHECK_URL,
@@ -6,12 +7,12 @@ import {
 } from "./services/HealthService"
 import * as cheerio from "cheerio"
 import { createApp, createAppFromConfig } from "./app"
-import { createApplicationConfiguration } from "./config/ApplicationConfiguration"
 import { RenderingService } from "./services/RenderingService"
+import { ApplicationConfiguration } from "./config/ApplicationConfiguration"
 
 describe("Testing HTTP application", () => {
   test("Retrieving the HTML markup of the health check SPA service", async () => {
-    const app = createAppFromConfig(createApplicationConfiguration(process.env))
+    const app = createAppFromConfig(ApplicationConfiguration.parse(config))
 
     const response = await request(app).post("/render").send({
       url: HEALTH_CHECK_URL,
