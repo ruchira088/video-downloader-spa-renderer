@@ -29,16 +29,15 @@ ENV PUPPETEER_EXECUTABLE_PATH /usr/bin/chromium-browser
 
 WORKDIR /opt/app
 
-COPY --from=builder /opt/app/build /opt/app/build
-
 ADD package.json .
 ADD package-lock.json .
 
 RUN npm ci --omit=dev
 
+COPY --from=builder /opt/app/build /opt/app/build
+
 ENV GIT_COMMIT "{{ git_commit }}"
 ENV GIT_BRANCH "{{ git_branch }}"
-ENV BUILD_TIMESTAMP "{{ build_timestamp }}"
 
 ENTRYPOINT ["npm", "run"]
 

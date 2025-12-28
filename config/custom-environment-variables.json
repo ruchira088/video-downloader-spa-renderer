@@ -1,0 +1,6 @@
+{
+  "httpConfiguration": {
+    "host": "HTTP_HOST",
+    "port": "HTTP_PORT"
+  }
+}

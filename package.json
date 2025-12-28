@@ -3,11 +3,13 @@
   "description": "Renders SPA pages",
   "license": "MIT",
   "scripts": {
-    "compile": "tsc",
+    "compile": "tsc && npm run setup-config",
     "compile:watch": "tsc -w",
     "clean": "rimraf build",
     "execute": "node build/src/main.js",
     "start": "ts-node src/main.ts",
+    "setup-config": "cp -r config build/config && npm run build-info",
+    "build-info": "ts-node scripts/build-info.ts",
     "clean-compile": "npm run clean && npm run compile",
     "test": "jest --runInBand",
     "lint": "eslint src",
@@ -16,6 +18,7 @@
   },
   "dependencies": {
     "axios": "^1.9.0",
+    "config": "^4.1.1",
     "express": "^5.1.0",
     "puppeteer": "^24.8.2",
     "winston": "^3.17.0",
@@ -23,6 +26,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.27.0",
+    "@types/config": "^3.3.5",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.10.0",
@@ -33,6 +37,7 @@
     "jest": "^30.0.0",
     "prettier": "^3.6.1",
     "rimraf": "^6.0.1",
+    "simple-git": "^3.30.0",
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
