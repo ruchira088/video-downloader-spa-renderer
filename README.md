@@ -34,17 +34,17 @@ Configuration is managed via the `config` npm package with JSON files in the `/c
 
 ### Default Configuration
 
-| Setting | Default | Description |
-|---------|---------|-------------|
+| Setting                  | Default   | Description         |
+| ------------------------ | --------- | ------------------- |
 | `httpConfiguration.host` | `0.0.0.0` | Server bind address |
-| `httpConfiguration.port` | `8000` | Server port |
+| `httpConfiguration.port` | `8000`    | Server port         |
 
 ### Environment Variables
 
-| Variable | Config Path | Description |
-|----------|-------------|-------------|
+| Variable    | Config Path              | Description         |
+| ----------- | ------------------------ | ------------------- |
 | `HTTP_HOST` | `httpConfiguration.host` | Server host address |
-| `HTTP_PORT` | `httpConfiguration.port` | Server port |
+| `HTTP_PORT` | `httpConfiguration.port` | Server port         |
 
 ## Usage
 
@@ -79,6 +79,7 @@ The server starts on `http://localhost:8000` by default.
 Returns application metadata.
 
 **Response:**
+
 ```json
 {
   "name": "video-downloader-spa-renderer",
@@ -94,6 +95,7 @@ Returns application metadata.
 Performs comprehensive health checks including internet connectivity and SPA rendering capability.
 
 **Response (200 OK):**
+
 ```json
 {
   "internetConnectivity": true,
@@ -102,6 +104,7 @@ Performs comprehensive health checks including internet connectivity and SPA ren
 ```
 
 **Response (503 Service Unavailable):**
+
 ```json
 {
   "internetConnectivity": true,
@@ -116,6 +119,7 @@ Performs comprehensive health checks including internet connectivity and SPA ren
 Renders an SPA and returns the HTML content.
 
 **Request:**
+
 ```json
 {
   "url": "https://example.com",
@@ -123,10 +127,10 @@ Renders an SPA and returns the HTML content.
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `url` | string | Yes | URL to render |
-| `readyCssSelectors` | string[] | No | CSS selectors to wait for before returning |
+| Field               | Type     | Required | Description                                |
+| ------------------- | -------- | -------- | ------------------------------------------ |
+| `url`               | string   | Yes      | URL to render                              |
+| `readyCssSelectors` | string[] | No       | CSS selectors to wait for before returning |
 
 **Response:** `text/html` - The rendered HTML content
 
@@ -135,6 +139,7 @@ Renders an SPA and returns the HTML content.
 Executes JavaScript on a rendered page and returns the result.
 
 **Request:**
+
 ```json
 {
   "url": "https://example.com",
@@ -143,11 +148,11 @@ Executes JavaScript on a rendered page and returns the result.
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `url` | string | Yes | URL to render |
-| `readyCssSelectors` | string[] | No | CSS selectors to wait for |
-| `script` | string | Yes | JavaScript to execute |
+| Field               | Type     | Required | Description               |
+| ------------------- | -------- | -------- | ------------------------- |
+| `url`               | string   | Yes      | URL to render             |
+| `readyCssSelectors` | string[] | No       | CSS selectors to wait for |
+| `script`            | string   | Yes      | JavaScript to execute     |
 
 **Response:** `application/json` - Result of the JavaScript execution
 
@@ -165,18 +170,18 @@ All errors return appropriate HTTP status codes with a JSON body:
 
 ### Available Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm start` | Run development server with ts-node |
-| `npm run compile` | Compile TypeScript to JavaScript |
-| `npm run compile:watch` | Compile in watch mode |
-| `npm run clean-compile` | Clean build directory and recompile |
-| `npm run execute` | Run compiled production server |
-| `npm run setup-config` | Copy config files and generate build info |
-| `npm run lint` | Run ESLint |
-| `npm run prettier` | Check code formatting |
-| `npm run prettier:fix` | Auto-fix formatting issues |
-| `npm test` | Run Jest tests |
+| Command                 | Description                               |
+| ----------------------- | ----------------------------------------- |
+| `npm start`             | Run development server with ts-node       |
+| `npm run compile`       | Compile TypeScript to JavaScript          |
+| `npm run compile:watch` | Compile in watch mode                     |
+| `npm run clean-compile` | Clean build directory and recompile       |
+| `npm run execute`       | Run compiled production server            |
+| `npm run setup-config`  | Copy config files and generate build info |
+| `npm run lint`          | Run ESLint                                |
+| `npm run prettier`      | Check code formatting                     |
+| `npm run prettier:fix`  | Auto-fix formatting issues                |
+| `npm test`              | Run Jest tests                            |
 
 ### Code Quality
 
@@ -207,6 +212,7 @@ docker run -p 8000:8000 spa-renderer
 ```
 
 The Docker image:
+
 - Uses Node.js LTS Alpine as the base
 - Includes Chromium and required dependencies pre-installed
 - Skips Puppeteer's Chromium download (uses system Chromium)
