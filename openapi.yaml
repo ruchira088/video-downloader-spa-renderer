@@ -1,0 +1,267 @@
+openapi: 3.0.3
+info:
+  title: Video Downloader SPA Renderer API
+  description: |
+    A service that renders Single Page Applications (SPAs) using Puppeteer and allows JavaScript execution on web pages.
+    This API provides endpoints for rendering SPAs, executing JavaScript on pages, and checking service health.
+  version: 1.0.0
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+
+tags:
+  - name: Service
+    description: Service information and health monitoring endpoints
+  - name: Render
+    description: SPA rendering and JavaScript execution endpoints
+
+paths:
+  /service/information:
+    get:
+      tags:
+        - Service
+      summary: Get service information
+      description: Returns application metadata including name, version, git information, and build timestamp
+      operationId: getServiceInformation
+      responses:
+        '200':
+          description: Service information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationInformation'
+              example:
+                name: video-downloader-spa-renderer
+                timestamp: '2026-01-09T10:30:00.000Z'
+                gitBranch: main
+                gitCommit: d31c4a2
+                buildTimestamp: '2026-01-09T09:00:00.000Z'
+
+  /service/health-check:
+    get:
+      tags:
+        - Service
+      summary: Perform health check
+      description: |
+        Checks the health of the service by testing internet connectivity and SPA rendering capabilities.
+        Returns 200 if all checks pass, 503 if any check fails.
+      operationId: healthCheck
+      responses:
+        '200':
+          description: All health checks passed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+              example:
+                internetConnectivity: healthy
+                spaRendering: healthy
+        '503':
+          description: One or more health checks failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+              example:
+                internetConnectivity: healthy
+                spaRendering: unhealthy
+
+  /render:
+    post:
+      tags:
+        - Render
+      summary: Render SPA page
+      description: |
+        Renders a Single Page Application using Puppeteer and returns the fully rendered HTML content.
+        Optionally waits for specific CSS selectors to be present before returning the content.
+      operationId: renderPage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenderRequest'
+            examples:
+              simple:
+                summary: Simple render without selectors
+                value:
+                  url: https://example.com
+              withSelectors:
+                summary: Render with CSS selectors
+                value:
+                  url: https://example.com
+                  readyCssSelectors:
+                    - '#content'
+                    - '.loaded'
+      responses:
+        '200':
+          description: Page rendered successfully
+          content:
+            text/html:
+              schema:
+                type: string
+                description: The fully rendered HTML content of the page
+        '400':
+          description: Invalid request or rendering failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                errorMessages:
+                  - Failed to render page: Timeout exceeded
+
+  /render/execute:
+    post:
+      tags:
+        - Render
+      summary: Execute JavaScript on a page
+      description: |
+        Navigates to a URL, optionally waits for CSS selectors, executes custom JavaScript code,
+        and returns the result of the JavaScript execution.
+      operationId: executeJavaScript
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JsExecutionRequest'
+            examples:
+              simple:
+                summary: Execute JavaScript without selectors
+                value:
+                  url: https://example.com
+                  script: document.title
+              withSelectors:
+                summary: Execute JavaScript with CSS selectors
+                value:
+                  url: https://example.com
+                  readyCssSelectors:
+                    - '#app'
+                  script: document.querySelector('#app').innerHTML
+              complex:
+                summary: Complex JavaScript execution
+                value:
+                  url: https://example.com
+                  readyCssSelectors:
+                    - '.video-container'
+                  script: |
+                    const videos = document.querySelectorAll('video');
+                    return Array.from(videos).map(v => v.src);
+      responses:
+        '200':
+          description: JavaScript executed successfully
+          content:
+            application/json:
+              schema:
+                description: The result of the JavaScript execution
+        '400':
+          description: Invalid request or execution failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                errorMessages:
+                  - Failed to execute script: ReferenceError
+
+components:
+  schemas:
+    ApplicationInformation:
+      type: object
+      required:
+        - name
+        - timestamp
+        - gitBranch
+        - gitCommit
+        - buildTimestamp
+      properties:
+        name:
+          type: string
+          description: Application name
+          example: video-downloader-spa-renderer
+        timestamp:
+          type: string
+          format: date-time
+          description: Current timestamp when the information was requested
+          example: '2026-01-09T10:30:00.000Z'
+        gitBranch:
+          type: string
+          description: Git branch name
+          example: main
+        gitCommit:
+          type: string
+          description: Git commit hash
+          example: d31c4a2
+        buildTimestamp:
+          type: string
+          description: Build timestamp (ISO 8601 format or 'Unknown')
+          example: '2026-01-09T09:00:00.000Z'
+
+    HealthCheck:
+      type: object
+      required:
+        - internetConnectivity
+        - spaRendering
+      properties:
+        internetConnectivity:
+          $ref: '#/components/schemas/HealthStatus'
+        spaRendering:
+          $ref: '#/components/schemas/HealthStatus'
+
+    HealthStatus:
+      type: string
+      enum:
+        - healthy
+        - unhealthy
+      description: Health status of a component
+
+    RenderRequest:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          format: uri
+          description: The URL of the SPA to render
+          example: https://example.com
+        readyCssSelectors:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: |
+            Optional array of CSS selectors to wait for before considering the page ready.
+            If provided, the service will wait for each selector to be present in the DOM.
+          example:
+            - '#app'
+            - '.content-loaded'
+
+    JsExecutionRequest:
+      allOf:
+        - $ref: '#/components/schemas/RenderRequest'
+        - type: object
+          required:
+            - script
+          properties:
+            script:
+              type: string
+              description: JavaScript code to execute on the page
+              example: document.title
+
+    ErrorResponse:
+      type: object
+      required:
+        - errorMessages
+      properties:
+        errorMessages:
+          type: array
+          items:
+            type: string
+          description: List of error messages
+          example:
+            - Invalid URL format
