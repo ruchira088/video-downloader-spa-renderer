@@ -27,18 +27,18 @@ paths:
       description: Returns application metadata including name, version, git information, and build timestamp
       operationId: getServiceInformation
       responses:
-        '200':
+        "200":
           description: Service information retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApplicationInformation'
+                $ref: "#/components/schemas/ApplicationInformation"
               example:
                 name: video-downloader-spa-renderer
-                timestamp: '2026-01-09T10:30:00.000Z'
+                timestamp: "2026-01-09T10:30:00.000Z"
                 gitBranch: main
                 gitCommit: d31c4a2
-                buildTimestamp: '2026-01-09T09:00:00.000Z'
+                buildTimestamp: "2026-01-09T09:00:00.000Z"
 
   /service/health-check:
     get:
@@ -50,21 +50,21 @@ paths:
         Returns 200 if all checks pass, 503 if any check fails.
       operationId: healthCheck
       responses:
-        '200':
+        "200":
           description: All health checks passed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthCheck'
+                $ref: "#/components/schemas/HealthCheck"
               example:
                 internetConnectivity: healthy
                 spaRendering: healthy
-        '503':
+        "503":
           description: One or more health checks failed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthCheck'
+                $ref: "#/components/schemas/HealthCheck"
               example:
                 internetConnectivity: healthy
                 spaRendering: unhealthy
@@ -83,7 +83,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RenderRequest'
+              $ref: "#/components/schemas/RenderRequest"
             examples:
               simple:
                 summary: Simple render without selectors
@@ -94,22 +94,22 @@ paths:
                 value:
                   url: https://example.com
                   readyCssSelectors:
-                    - '#content'
-                    - '.loaded'
+                    - "#content"
+                    - ".loaded"
       responses:
-        '200':
+        "200":
           description: Page rendered successfully
           content:
             text/html:
               schema:
                 type: string
                 description: The fully rendered HTML content of the page
-        '400':
+        "400":
           description: Invalid request or rendering failed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 errorMessages:
                   - Failed to render page: Timeout exceeded
@@ -128,7 +128,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/JsExecutionRequest'
+              $ref: "#/components/schemas/JsExecutionRequest"
             examples:
               simple:
                 summary: Execute JavaScript without selectors
@@ -140,30 +140,30 @@ paths:
                 value:
                   url: https://example.com
                   readyCssSelectors:
-                    - '#app'
+                    - "#app"
                   script: document.querySelector('#app').innerHTML
               complex:
                 summary: Complex JavaScript execution
                 value:
                   url: https://example.com
                   readyCssSelectors:
-                    - '.video-container'
+                    - ".video-container"
                   script: |
                     const videos = document.querySelectorAll('video');
                     return Array.from(videos).map(v => v.src);
       responses:
-        '200':
+        "200":
           description: JavaScript executed successfully
           content:
             application/json:
               schema:
                 description: The result of the JavaScript execution
-        '400':
+        "400":
           description: Invalid request or execution failed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 errorMessages:
                   - Failed to execute script: ReferenceError
@@ -187,7 +187,7 @@ components:
           type: string
           format: date-time
           description: Current timestamp when the information was requested
-          example: '2026-01-09T10:30:00.000Z'
+          example: "2026-01-09T10:30:00.000Z"
         gitBranch:
           type: string
           description: Git branch name
@@ -199,7 +199,7 @@ components:
         buildTimestamp:
           type: string
           description: Build timestamp (ISO 8601 format or 'Unknown')
-          example: '2026-01-09T09:00:00.000Z'
+          example: "2026-01-09T09:00:00.000Z"
 
     HealthCheck:
       type: object
@@ -208,9 +208,9 @@ components:
         - spaRendering
       properties:
         internetConnectivity:
-          $ref: '#/components/schemas/HealthStatus'
+          $ref: "#/components/schemas/HealthStatus"
         spaRendering:
-          $ref: '#/components/schemas/HealthStatus'
+          $ref: "#/components/schemas/HealthStatus"
 
     HealthStatus:
       type: string
@@ -238,12 +238,12 @@ components:
             Optional array of CSS selectors to wait for before considering the page ready.
             If provided, the service will wait for each selector to be present in the DOM.
           example:
-            - '#app'
-            - '.content-loaded'
+            - "#app"
+            - ".content-loaded"
 
     JsExecutionRequest:
       allOf:
-        - $ref: '#/components/schemas/RenderRequest'
+        - $ref: "#/components/schemas/RenderRequest"
         - type: object
           required:
             - script
