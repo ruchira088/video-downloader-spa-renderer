@@ -44,6 +44,7 @@ export const createAppFromConfig = (
     axiosInstance,
     packageJson,
     applicationConfiguration.buildInformation,
+    applicationConfiguration.healthCheckConfiguration,
     defaultClock
   )
 

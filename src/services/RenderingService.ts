@@ -1,7 +1,7 @@
 import { create as createLogger } from "../logger/Logger"
 import { Logger } from "winston"
 import { Clock } from "../utils/Clock"
-import puppeteer, { Browser, Page } from "puppeteer"
+import puppeteer, { Browser, Page, WaitForSelectorOptions } from "puppeteer"
 import { Optional } from "../utils/Helpers"
 
 export interface RenderingService {
@@ -20,6 +20,19 @@ export const launchBrowser = (): Promise<Browser> =>
     headless: true,
   })
 
+const DEFAULT_SELECTOR_TIMEOUT_MS = 30_000
+
+const ALLOWED_PROTOCOLS = ["http:", "https:"]
+
+const validateUrl = (url: string): void => {
+  const parsed = new URL(url)
+  if (!ALLOWED_PROTOCOLS.includes(parsed.protocol)) {
+    throw new Error(
+      `Invalid URL protocol: ${parsed.protocol}. Only http and https are allowed.`
+    )
+  }
+}
+
 const logger: Logger = createLogger(__filename)
 
 export class PuppeteerRenderingService implements RenderingService {
@@ -29,9 +42,12 @@ export class PuppeteerRenderingService implements RenderingService {
     url: string,
     readyCssSelectors: Optional<string[]>,
     execute: (page: Page) => Promise<A>,
-    action: string
+    action: string,
+    selectorTimeoutMs: number = DEFAULT_SELECTOR_TIMEOUT_MS
   ): Promise<A> {
     const startTime = this.clock.timestamp()
+
+    validateUrl(url)
 
     logger.info(
       `Rendering url=${url} with readyCssSelectors=[${readyCssSelectors?.join(", ") || ""}]`
@@ -50,10 +66,13 @@ export class PuppeteerRenderingService implements RenderingService {
       })
 
       if (hasReadyCssSelectors) {
+        const waitOptions: WaitForSelectorOptions = {
+          timeout: selectorTimeoutMs,
+        }
         await readyCssSelectors.reduce<Promise<void>>(
           async (promise, cssSelector) => {
             await promise
-            await page.waitForSelector(cssSelector)
+            await page.waitForSelector(cssSelector, waitOptions)
           },
           Promise.resolve()
         )

@@ -2,6 +2,7 @@ import { AxiosInstance } from "axios"
 import { create as createLogger } from "../logger/Logger"
 import { Logger } from "winston"
 import { BuildInformation } from "../config/BuildInformation"
+import { HealthCheckConfiguration } from "../config/HealthCheckConfiguration"
 import { Clock } from "../utils/Clock"
 import { RenderingService } from "./RenderingService"
 import { withTimeout } from "../utils/Helpers"
@@ -36,19 +37,13 @@ export interface HealthService {
 
 const logger: Logger = createLogger(__filename)
 
-export const HEALTH_CHECK_URL = "https://spa-health-check.ruchij.com"
-export const HEALTH_CHECK_READY_CSS_SELECTORS = [
-  "#text-field",
-  ".class-name",
-  ".deferred-class-name",
-]
-
 export class HealthServiceImpl implements HealthService {
   constructor(
     private readonly renderingService: RenderingService,
     private readonly axiosInstance: AxiosInstance,
     private readonly packageJson: PackageJson,
     private readonly buildInformation: BuildInformation,
+    private readonly healthCheckConfiguration: HealthCheckConfiguration,
     private readonly clock: Clock
   ) {}
 
@@ -64,25 +59,28 @@ export class HealthServiceImpl implements HealthService {
   }
 
   async healthCheck(): Promise<HealthCheck> {
+    const healthCheckUrl = this.healthCheckConfiguration.url
+    const readyCssSelectors = this.healthCheckConfiguration.readyCssSelectors
+
     const internetConnectivity: Promise<HealthStatus> = this.axiosInstance
-      .get(HEALTH_CHECK_URL)
+      .get(healthCheckUrl)
       .then<HealthStatus>((response) =>
         response.status === 200 ? HealthStatus.Healthy : HealthStatus.Unhealthy
       )
       .catch((exception) => {
         logger.error(
-          `Health check failed for Internet connectivity url=${HEALTH_CHECK_URL}`,
+          `Health check failed for Internet connectivity url=${healthCheckUrl}`,
           exception.message
         )
         return HealthStatus.Unhealthy
       })
 
     const spaRendering: Promise<HealthStatus> = this.renderingService
-      .render(HEALTH_CHECK_URL, HEALTH_CHECK_READY_CSS_SELECTORS)
+      .render(healthCheckUrl, readyCssSelectors)
       .then<HealthStatus>(() => HealthStatus.Healthy)
       .catch((exception) => {
         logger.error(
-          `Health check failed for SPA rendering url=${HEALTH_CHECK_URL}`,
+          `Health check failed for SPA rendering url=${healthCheckUrl}`,
           exception.message
         )
         return HealthStatus.Unhealthy

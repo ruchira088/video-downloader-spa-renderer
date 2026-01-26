@@ -1,9 +1,5 @@
 import express, { Request, Response, Router } from "express"
-import {
-  HEALTH_CHECK_URL,
-  HealthService,
-  HealthStatus,
-} from "../services/HealthService"
+import { HealthService, HealthStatus } from "../services/HealthService"
 import { Logger } from "winston"
 import { create as createLogger } from "../logger/Logger"
 
@@ -26,7 +22,7 @@ export const createServiceRouter = (healthService: HealthService): Router =>
 
       if (statusCode !== 200)
         logger.warn(
-          `Health check failed for url=${HEALTH_CHECK_URL} response=${JSON.stringify(healthCheck)}`
+          `Health check failed response=${JSON.stringify(healthCheck)}`
         )
 
       response.status(statusCode).json(healthCheck)

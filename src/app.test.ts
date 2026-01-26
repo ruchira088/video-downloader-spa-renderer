@@ -1,22 +1,23 @@
 import request from "supertest"
 import config from "config"
-import {
-  HEALTH_CHECK_READY_CSS_SELECTORS,
-  HEALTH_CHECK_URL,
-  HealthService,
-} from "./services/HealthService"
+import { HealthService } from "./services/HealthService"
 import * as cheerio from "cheerio"
 import { createApp, createAppFromConfig } from "./app"
 import { RenderingService } from "./services/RenderingService"
 import { ApplicationConfiguration } from "./config/ApplicationConfiguration"
 
 describe("Testing HTTP application", () => {
+  const appConfig = ApplicationConfiguration.parse(config)
+  const healthCheckUrl = appConfig.healthCheckConfiguration.url
+  const healthCheckSelectors =
+    appConfig.healthCheckConfiguration.readyCssSelectors
+
   test("Retrieving the HTML markup of the health check SPA service", async () => {
-    const app = createAppFromConfig(ApplicationConfiguration.parse(config))
+    const app = createAppFromConfig(appConfig)
 
     const response = await request(app).post("/render").send({
-      url: HEALTH_CHECK_URL,
-      readyCssSelectors: HEALTH_CHECK_READY_CSS_SELECTORS,
+      url: healthCheckUrl,
+      readyCssSelectors: healthCheckSelectors,
     })
 
     expect(response.status).toBe(200)
@@ -39,7 +40,7 @@ describe("Testing HTTP application", () => {
 
     const response = await request(app)
       .post("/render")
-      .send({ readyCssSelectors: HEALTH_CHECK_READY_CSS_SELECTORS })
+      .send({ readyCssSelectors: healthCheckSelectors })
 
     expect(renderingService.render).not.toHaveBeenCalled()
     expect(response.status).toBe(400)

@@ -14,6 +14,10 @@ describe("ApplicationConfiguration", () => {
             gitCommit: "git-commit",
             buildTimestamp: "2021-01-01T00:00:00.000Z",
           },
+          healthCheckConfiguration: {
+            url: "https://example.com",
+            readyCssSelectors: ["#selector"],
+          },
         })
 
       expect(applicationConfiguration.httpConfiguration.host).toEqual("1.1.1.1")
@@ -28,6 +32,13 @@ describe("ApplicationConfiguration", () => {
       expect(applicationConfiguration.buildInformation.buildTimestamp).toEqual(
         new Date("2021-01-01T00:00:00.000Z")
       )
+
+      expect(applicationConfiguration.healthCheckConfiguration.url).toEqual(
+        "https://example.com"
+      )
+      expect(
+        applicationConfiguration.healthCheckConfiguration.readyCssSelectors
+      ).toEqual(["#selector"])
     })
   })
 })

@@ -2,5 +2,8 @@
   "httpConfiguration": {
     "host": "HTTP_HOST",
     "port": "HTTP_PORT"
+  },
+  "healthCheckConfiguration": {
+    "url": "HEALTH_CHECK_URL"
   }
 }

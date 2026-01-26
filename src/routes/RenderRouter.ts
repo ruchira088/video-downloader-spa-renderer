@@ -22,7 +22,7 @@ const createResponse = (
     .catch((exception) =>
       response
         .status(400)
-        .json({ errorMessages: [(exception as Error).message] })
+        .json({ errorMessage: [(exception as Error).message] })
     )
 
 export const createRenderRouter = (
