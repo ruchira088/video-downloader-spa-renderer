@@ -67,6 +67,9 @@ export class PuppeteerRenderingService implements RenderingService {
       logger.info(`Successfully ${action} url=${url} duration=${duration}ms`)
 
       return result
+    } catch (exception) {
+      logger.error(`Failed to ${action} url=${url}`, exception)
+      throw exception
     } finally {
       await browser.close()
     }
