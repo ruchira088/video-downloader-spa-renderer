@@ -48,6 +48,14 @@ describe("HealthService", () => {
   })
 
   describe("healthCheck", () => {
+    beforeEach(() => {
+      jest.useFakeTimers()
+    })
+
+    afterEach(() => {
+      jest.useRealTimers()
+    })
+
     test("returns healthy when both checks pass", async () => {
       const mockRenderingService: jest.Mocked<RenderingService> = {
         render: jest.fn().mockResolvedValue("<html></html>"),
