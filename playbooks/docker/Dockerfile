@@ -1,4 +1,4 @@
-FROM node:lts-alpine as builder
+FROM node:lts-alpine AS builder
 
 RUN apk add git
 
@@ -10,6 +10,7 @@ ADD package-lock.json .
 RUN npm ci
 
 ADD tsconfig.json .
+ADD tsconfig.scripts.json .
 ADD src src
 ADD config config
 ADD scripts scripts
