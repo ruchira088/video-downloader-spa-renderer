@@ -23,6 +23,7 @@ FROM node:lts-alpine
 LABEL org.opencontainers.image.source=https://github.com/ruchira088/video-downloader-spa-renderer
 
 RUN apk add --no-cache \
+      tini \
       chromium \
       nss \
       freetype \
@@ -45,6 +46,6 @@ COPY --from=builder /opt/app/build /opt/app/build
 ENV GIT_COMMIT="{{ git_commit }}"
 ENV GIT_BRANCH="{{ git_branch }}"
 
-ENTRYPOINT ["npm", "run"]
+ENTRYPOINT ["/sbin/tini", "--", "npm", "run"]
 
 CMD ["execute"]
