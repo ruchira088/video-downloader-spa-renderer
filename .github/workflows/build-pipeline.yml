@@ -29,19 +29,9 @@ jobs:
         env:
           PUPPETEER_SKIP_DOWNLOAD: "true"
 
-      - name: Cache Puppeteer browsers
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache/puppeteer
-          key: puppeteer-chrome-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-
-      - name: Install Chrome for Puppeteer
-        run: |
-          npx puppeteer browsers install chrome || {
-            echo "Chrome install failed; clearing cache and retrying"
-            rm -rf ~/.cache/puppeteer
-            npx puppeteer browsers install chrome
-          }
+      - name: Set up Chrome
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@v2
 
       - name: Transpile TypeScript
         run: npm run clean-compile
@@ -54,6 +44,8 @@ jobs:
 
       - name: Execute test suite
         run: npm test
+        env:
+          PUPPETEER_EXECUTABLE_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
 
   build-and-publish-docker-image:
     name: Publish Docker image
