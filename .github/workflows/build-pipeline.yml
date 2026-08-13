@@ -5,10 +5,6 @@ on:
     branches:
       - "**"
 
-concurrency:
-  group: build-pipeline-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   transpile-and-test:
     name: Run test suite
@@ -90,6 +86,10 @@ jobs:
 
     if: github.ref != 'refs/heads/main'
 
+    concurrency:
+      group: deploy-to-dev-${{ github.ref }}
+      cancel-in-progress: false
+
     needs:
       - build-and-publish-docker-image
 
@@ -118,6 +118,10 @@ jobs:
 
     if: github.ref == 'refs/heads/main'
 
+    concurrency:
+      group: deploy-to-staging
+      cancel-in-progress: false
+
     needs:
       - build-and-publish-docker-image
 
@@ -145,6 +149,10 @@ jobs:
     environment: Production
 
     if: github.ref == 'refs/heads/main'
+
+    concurrency:
+      group: deploy-to-production
+      cancel-in-progress: false
 
     needs:
       - deploy-to-staging
