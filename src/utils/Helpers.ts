@@ -25,7 +25,9 @@ export const filter = <A>(
 }
 
 export const sleep = (milliseconds: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, milliseconds))
+  new Promise((resolve) => {
+    setTimeout(resolve, milliseconds)
+  })
 
 export const withTimeout = <A>(
   promise: Promise<A>,

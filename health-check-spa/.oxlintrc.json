@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "react", "jsx-a11y"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "pedantic": "error"
+  },
+  "ignorePatterns": ["build", ".react-router"],
+  "rules": {
+    // React Router route components are typed as `({}: Route.ComponentProps)`.
+    "eslint/no-empty-pattern": "off",
+    // The automatic JSX runtime ("jsx": "react-jsx") does not need React in scope.
+    "react/react-in-jsx-scope": "off"
+  }
+}

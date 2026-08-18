@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "pedantic": "error"
+  },
+  "ignorePatterns": ["build", "coverage", "health-check-spa"],
+  "rules": {
+    // Express 5 forwards rejections from async handlers to the error
+    // middleware, so async route handlers are safe here.
+    "oxc/no-async-endpoint-handlers": "off",
+    // Opinionated rules that the previous ESLint config did not enforce and
+    // that would require reshaping existing code to satisfy.
+    "eslint/max-lines-per-function": "off",
+    "eslint/no-else-return": "off",
+    "unicorn/consistent-function-scoping": "off",
+    "unicorn/no-immediate-mutation": "off",
+    // The scripts are CommonJS, so top-level await is not available.
+    "unicorn/prefer-top-level-await": "off"
+  }
+}

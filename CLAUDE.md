@@ -14,17 +14,18 @@ The repo contains **two independent npm projects**:
 ## Commands (root project)
 
 ```bash
-npm start                # dev server via ts-node (http://localhost:8000)
+npm start                # dev server via tsx (http://localhost:8000)
 npm run clean-compile    # rimraf build + tsc + copy config + generate build-info
 npm run execute          # run compiled output (node src/main.js inside build/)
 npm test                 # jest --runInBand (launches real Chromium; 60s timeout)
 npx jest src/services/RenderingService.test.ts        # single test file
 npx jest -t "test name"                               # single test by name
-npm run lint             # eslint src
+npm run typecheck        # tsc --noEmit over the tests and scripts
+npm run lint             # oxlint src scripts
 npm run prettier         # check formatting (fix with prettier:fix)
 ```
 
-CI (`.github/workflows/build-pipeline.yml`) runs clean-compile, lint, prettier, and tests on every push, then publishes a Docker image. Tests need a Chromium; CI sets `PUPPETEER_EXECUTABLE_PATH` and installs with `PUPPETEER_SKIP_DOWNLOAD=true`.
+CI (`.github/workflows/build-pipeline.yml`) runs clean-compile, typecheck, lint, prettier, and tests on every push, then publishes a Docker image. Tests need a Chromium; CI sets `PUPPETEER_EXECUTABLE_PATH` and installs with `PUPPETEER_SKIP_DOWNLOAD=true`.
 
 `health-check-spa/` has its own scripts: `npm run build`, `npm start` (dev), `npm run typecheck`, `npm run lint`, `npm run prettier`.
 
@@ -41,9 +42,19 @@ CI (`.github/workflows/build-pipeline.yml`) runs clean-compile, lint, prettier, 
 
 `HealthServiceImpl` verifies both internet connectivity (axios GET) and real rendering by rendering the **deployed** health-check SPA (`https://spa-health-check.ruchij.com`) and waiting for selectors defined in `config/default.json` (`#text-field`, `.class-name`, `.deferred-class-name` — the last one is rendered deferred on purpose). If you change elements/selectors in `health-check-spa/`, update `healthCheckConfiguration` to match; the SPA auto-deploys on push to `main` via `.github/workflows/health-check-app.yml`.
 
+## Toolchain (TypeScript 7)
+
+Both projects are on **TypeScript 7**, the native (Go) compiler. It ships `tsc` as a platform binary and no longer exposes a JavaScript compiler API, which rules out every tool that used to drive `typescript` in-process:
+
+- **ESLint → [oxlint](https://oxc.rs)**: `typescript-eslint` peer-caps at `typescript <6.1.0`, so it cannot run against TS 7. Rules live in `.oxlintrc.json` (one per project — the root config ignores `health-check-spa/`, which has its own). Config is JSONC, so comments are allowed. Rule set is `correctness` + `suspicious` + `pedantic`, roughly the old `tseslint.configs.strict`; the rules turned off there are annotated with why.
+- **ts-node → tsx**: used by `npm start` and `npm run build-info`. Node 24's built-in type stripping is not an option because the source uses non-erasable syntax (`enum` in `HealthService.ts`, a parameter property in `RenderingService.ts`).
+- **ts-jest → babel-jest**: `jest.config.js` strips types with `@babel/preset-typescript`. Babel does **not** type check, so `npm run typecheck` covers the tests and scripts that `tsc` skips during `npm run compile`. Run it after touching test files.
+
+Type-aware lint rules (`oxlint --type-aware`, via `oxlint-tsgolint`) are not enabled: `tsconfig.json` excludes the test files, so tsgolint has no program for them and reports everything as `error`-typed. Enabling it would mean restructuring the tsconfigs first.
+
 ## Gotchas
 
-- **Jest + puppeteer ESM**: puppeteer v25+ packages are ESM-only. `jest.config.js` transpiles them to CommonJS via babel (`transformIgnorePatterns` allowlist). If a puppeteer upgrade breaks Jest with `import`/`export` syntax errors, that config is the place to look.
-- **`allowScripts` in `package.json`** pins exact versions (e.g. `puppeteer@25.3.0`); bump the entry when upgrading those packages or their postinstall scripts won't run.
+- **Jest + ESM dependencies**: puppeteer v25+ and `config` v5 ship ESM. `jest.config.js` transpiles them to CommonJS via babel (`transformIgnorePatterns` allowlist). If a dependency upgrade breaks Jest with `import`/`export` syntax errors, add the package to that allowlist.
+- **`allowScripts` in `package.json`** pins exact versions (e.g. `puppeteer@25.8.0`, `esbuild@0.28.2`); bump the entry when upgrading those packages or their postinstall scripts won't run.
 - Prettier style: 2-space indent, double quotes, no semicolons.
 - Deployment configs (Dockerfile, k8s manifests, Ansible playbooks) live under `playbooks/`. The Docker image uses system Chromium, not Puppeteer's download.
