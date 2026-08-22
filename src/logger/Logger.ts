@@ -18,5 +18,9 @@ export const create = (name: string): Logger =>
       format.label({ label: path.basename(name) }),
       format.printf(templateFunction as (info: TransformableInfo) => string)
     ),
-    transports: [new transports.Console()],
+    // Jest sets NODE_ENV to "test"; keeping the transport silent there
+    // stops the log lines from drowning out the test report.
+    transports: [
+      new transports.Console({ silent: process.env.NODE_ENV === "test" }),
+    ],
   })

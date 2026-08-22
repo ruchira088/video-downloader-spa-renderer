@@ -12,6 +12,7 @@
     "build-info": "tsx scripts/build-info.ts",
     "clean-compile": "npm run clean && npm run compile",
     "test": "jest --runInBand",
+    "test:coverage": "jest --runInBand --coverage",
     "typecheck": "tsc --noEmit --project tsconfig.test.json && tsc --noEmit --project tsconfig.scripts.json",
     "lint": "oxlint src scripts",
     "prettier": "prettier . --check",

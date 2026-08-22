@@ -6,3 +6,4 @@ build
 
 .k8s-output
 .docker-output
+coverage

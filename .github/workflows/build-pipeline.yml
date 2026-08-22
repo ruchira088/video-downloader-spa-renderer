@@ -42,7 +42,7 @@ jobs:
         run: npm run prettier
 
       - name: Execute test suite
-        run: npm test
+        run: npm run test:coverage
         env:
           PUPPETEER_EXECUTABLE_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
 

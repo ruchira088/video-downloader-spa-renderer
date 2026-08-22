@@ -105,14 +105,26 @@ paths:
                 type: string
                 description: The fully rendered HTML content of the page
         "400":
-          description: Invalid request or rendering failed
+          description: |
+            The request could not be fulfilled: the body failed validation, the URL was
+            rejected, the page could not be reached, or a `readyCssSelectors` entry never
+            appeared.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               example:
                 errorMessages:
-                  - Failed to render page: Timeout exceeded
+                  - "Failed to render page: Timeout exceeded"
+        "500":
+          description: The renderer itself failed, for example the browser could not be launched
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                errorMessages:
+                  - Failed to launch the browser process
 
   /render/execute:
     post:
@@ -159,14 +171,26 @@ paths:
               schema:
                 description: The result of the JavaScript execution
         "400":
-          description: Invalid request or execution failed
+          description: |
+            The request could not be fulfilled: the body failed validation, the URL was
+            rejected, the page could not be reached, a `readyCssSelectors` entry never
+            appeared, or the script threw.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               example:
                 errorMessages:
-                  - Failed to execute script: ReferenceError
+                  - "Failed to execute script: ReferenceError"
+        "500":
+          description: The renderer itself failed, for example the browser could not be launched
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                errorMessages:
+                  - Failed to launch the browser process
 
 components:
   schemas:
@@ -261,7 +285,41 @@ components:
         errorMessages:
           type: array
           items:
-            type: string
-          description: List of error messages
+            oneOf:
+              - type: string
+              - $ref: "#/components/schemas/ValidationIssue"
+          description: |
+            List of error messages. Request body validation failures are reported as
+            structured issues; every other failure is reported as a single message.
           example:
             - Invalid URL format
+
+    ValidationIssue:
+      type: object
+      description: A single request body validation failure
+      required:
+        - code
+        - message
+        - path
+      properties:
+        code:
+          type: string
+          description: The kind of validation failure
+          example: invalid_type
+        message:
+          type: string
+          description: Human readable description of the failure
+          example: "Invalid input: expected string, received undefined"
+        path:
+          type: array
+          description: Path to the offending property within the request body
+          items:
+            oneOf:
+              - type: string
+              - type: integer
+          example:
+            - url
+        expected:
+          type: string
+          description: The expected type, when the failure is a type mismatch
+          example: string

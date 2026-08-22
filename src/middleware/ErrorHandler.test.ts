@@ -1,40 +1,88 @@
 import request from "supertest"
-import express, { Express, Request, Response, NextFunction } from "express"
+import express, { Express, NextFunction, Request, Response } from "express"
 import errorHandler from "./ErrorHandler"
-import { z } from "zod/v4"
+import { z, ZodError } from "zod/v4"
 
 describe("ErrorHandler middleware", () => {
   const createTestApp = (errorToThrow: () => Error): Express => {
     const app = express()
-    app.get("/test", (req: Request, res: Response, next: NextFunction) => {
-      next(errorToThrow())
-    })
+    app.get(
+      "/test",
+      (_request: Request, _response: Response, next: NextFunction) => {
+        next(errorToThrow())
+      }
+    )
     app.use(errorHandler)
     return app
   }
 
-  test("handles ZodError with proper format", async () => {
-    const schema = z.object({ name: z.string() })
-    const result = schema.safeParse({ name: 123 })
+  const zodErrorFor = (value: unknown): ZodError => {
+    const result = z
+      .object({ name: z.string(), age: z.number() })
+      .safeParse(value)
+
     if (result.success) {
       throw new Error("Expected parsing to fail")
     }
 
-    const app = createTestApp(() => result.error)
+    return result.error
+  }
+
+  test("responds to a ZodError with 400 and the underlying issues", async () => {
+    const app = createTestApp(() => zodErrorFor({ name: 123, age: "old" }))
 
     const response = await request(app).get("/test")
 
     expect(response.status).toBe(400)
-    expect(response.body.errorMessage).toBeDefined()
-    expect(Array.isArray(response.body.errorMessage)).toBe(true)
+    expect(response.headers["content-type"]).toMatch(/application\/json/u)
+    expect(response.body.errorMessages).toHaveLength(2)
+    expect(
+      response.body.errorMessages.map((issue: { path: string[] }) => issue.path)
+    ).toEqual([["name"], ["age"]])
+    expect(response.body.errorMessages[0]).toMatchObject({
+      code: "invalid_type",
+      expected: "string",
+    })
   })
 
-  test("handles generic Error with 500 status", async () => {
+  test("responds to a generic Error with 500 and its message", async () => {
     const app = createTestApp(() => new Error("Something went wrong"))
 
     const response = await request(app).get("/test")
 
     expect(response.status).toBe(500)
-    expect(response.body.errorMessage).toEqual(["Something went wrong"])
+    expect(response.body).toStrictEqual({
+      errorMessages: ["Something went wrong"],
+    })
+  })
+
+  test.each([
+    ["a TypeError", () => new TypeError("Not a function")],
+    ["a custom Error subclass", () => new (class extends Error {})("Custom")],
+  ])("responds to %s with 500", async (_name, errorToThrow) => {
+    const app = createTestApp(errorToThrow)
+
+    const response = await request(app).get("/test")
+
+    expect(response.status).toBe(500)
+    expect(response.body.errorMessages).toHaveLength(1)
+  })
+
+  test("responds with 500 and an empty message when the error has none", async () => {
+    const app = createTestApp(() => new Error())
+
+    const response = await request(app).get("/test")
+
+    expect(response.status).toBe(500)
+    expect(response.body).toStrictEqual({ errorMessages: [""] })
+  })
+
+  test("does not leak the stack trace to the client", async () => {
+    const app = createTestApp(() => new Error("Something went wrong"))
+
+    const response = await request(app).get("/test")
+
+    expect(response.text).not.toContain("ErrorHandler.test")
+    expect(response.text).not.toContain("at ")
   })
 })

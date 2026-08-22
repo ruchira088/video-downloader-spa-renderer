@@ -18,6 +18,7 @@ npm start                # dev server via tsx (http://localhost:8000)
 npm run clean-compile    # rimraf build + tsc + copy config + generate build-info
 npm run execute          # run compiled output (node src/main.js inside build/)
 npm test                 # jest --runInBand (launches real Chromium; 60s timeout)
+npm run test:coverage    # same, plus the coverage report and its thresholds
 npx jest src/services/RenderingService.test.ts        # single test file
 npx jest -t "test name"                               # single test by name
 npm run typecheck        # tsc --noEmit over the tests and scripts
@@ -25,9 +26,23 @@ npm run lint             # oxlint src scripts
 npm run prettier         # check formatting (fix with prettier:fix)
 ```
 
-CI (`.github/workflows/build-pipeline.yml`) runs clean-compile, typecheck, lint, prettier, and tests on every push, then publishes a Docker image. Tests need a Chromium; CI sets `PUPPETEER_EXECUTABLE_PATH` and installs with `PUPPETEER_SKIP_DOWNLOAD=true`.
+CI (`.github/workflows/build-pipeline.yml`) runs clean-compile, typecheck, lint, prettier, and `test:coverage` on every push, then publishes a Docker image. Tests need a Chromium; CI sets `PUPPETEER_EXECUTABLE_PATH` and installs with `PUPPETEER_SKIP_DOWNLOAD=true`.
 
 `health-check-spa/` has its own scripts: `npm run build`, `npm start` (dev), `npm run typecheck`, `npm run lint`, `npm run prettier`.
+
+## Tests
+
+Tests sit next to the code they cover. Three kinds, distinguished by suffix:
+
+- `*.test.ts` — hermetic. Puppeteer is mocked in `RenderingService.test.ts` and `RenderingService.errors.test.ts`, so the suite covers navigation flow, sequential selector waits, error classification and browser cleanup without launching Chromium.
+- `*.integration.test.ts` — launches a real Chromium against `startTestHttpServer` fixtures on `127.0.0.1` (`src/test/TestHttpServer.ts`). Local, so it stays deterministic.
+- `*.smoke.test.ts` — the only tests that leave the machine. `app.smoke.test.ts` renders the deployed health-check SPA to guard the coupling described below, and calls `jest.retryTimes` to absorb transient network failures.
+
+Shared fixtures and mocks live in `src/test/`; that directory is excluded from `tsconfig.json` so it never reaches `build/`.
+
+`jest.config.js` enforces coverage thresholds (95% statements/functions/lines, 90% branches) over `src/`, excluding `src/main.ts` and `src/test/`. The suite currently sits at 100% on every metric — when adding code, add the tests that keep it there.
+
+`src/logger/Logger.ts` silences its console transport when `NODE_ENV === "test"` (which Jest sets), keeping the test report readable; `Logger.test.ts` asserts the format by attaching its own stream transport.
 
 ## Architecture
 
@@ -35,7 +50,8 @@ CI (`.github/workflows/build-pipeline.yml`) runs clean-compile, typecheck, lint,
 - `src/app.ts` — two factories: `createAppFromConfig` wires real dependencies (`PuppeteerRenderingService`, `HealthServiceImpl`, axios); `createApp(renderingService, healthService)` builds the Express app from interfaces. Tests use `createApp` to inject mocks — keep new dependencies flowing through these factories.
 - `src/routes/` — `ServiceRouter` (`/service/information`, `/service/health-check`) and `RenderRouter` (`/render`, `/render/execute`). Business logic lives in `src/services/`, not in routes.
 - `src/services/RenderingService.ts` — launches a **fresh browser per request** (closed in `finally`), validates URLs to http/https only, and waits for each `readyCssSelectors` entry sequentially (30s timeout each) before capturing content.
-- Errors funnel through `src/middleware/ErrorHandler.ts` / `NotFoundHandler.ts` and return `{ "errorMessages": [...] }`.
+- Rendering failures are classified: anything attributable to the request (bad URL, unreachable page, selector timeout, a script that throws) is wrapped in `RenderingError` and answered with a 400, while failures of the renderer itself (`puppeteer.launch`, `browser.newPage`) propagate untouched and become a 500. Throw a `RenderingError` for new request-caused failures; leave everything else alone.
+- Errors funnel through `src/middleware/ErrorHandler.ts` / `NotFoundHandler.ts` and return `{ "errorMessages": [...] }` — an array of strings, except for request body validation failures, which carry the Zod issue objects. `ErrorHandler` honours the 4xx status that Express middleware attaches to its own errors (a malformed JSON body is `entity.parse.failed` with a 400, an oversized one is 413); everything else is logged and reported as a 500.
 - Configuration: `config/*.json` via the `config` package; env overrides in `custom-environment-variables.json` (`HTTP_HOST`, `HTTP_PORT`). `buildInformation` in `config/default.json` holds placeholders that `scripts/build-info.ts` overwrites during `npm run compile` (via `setup-config`, which also copies `config/` into `build/`).
 
 ### Health check coupling

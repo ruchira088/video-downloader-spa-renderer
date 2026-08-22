@@ -19,6 +19,25 @@ module.exports = {
   modulePathIgnorePatterns: ["<rootDir>/build/"],
   detectOpenHandles: true,
   testTimeout: 60_000,
+  collectCoverageFrom: [
+    "src/**/*.ts",
+    "!src/**/*.test.ts",
+    // The entry point wires the process together (listen, SIGTERM) and is
+    // covered by running the service rather than by Jest.
+    "!src/main.ts",
+    // Fixtures and helpers used by the tests themselves.
+    "!src/test/**/*.ts",
+  ],
+  coverageDirectory: "coverage",
+  coverageReporters: ["text", "lcov"],
+  coverageThreshold: {
+    global: {
+      statements: 95,
+      branches: 90,
+      functions: 95,
+      lines: 95,
+    },
+  },
   transform: {
     "^.+\\.tsx?$": typescriptTransform,
     // puppeteer v25 and config v5 ship ESM; transpile their `import`/`export`

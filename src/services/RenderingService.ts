@@ -3,6 +3,9 @@ import { Logger } from "winston"
 import { Clock } from "../utils/Clock"
 import puppeteer, { Browser, Page, WaitForSelectorOptions } from "puppeteer"
 import { Optional } from "../utils/Helpers"
+import { RenderingError } from "./RenderingError"
+
+export { RenderingError }
 
 export interface RenderingService {
   render(url: string, readyCssSelectors: Optional<string[]>): Promise<string>
@@ -25,11 +28,56 @@ const DEFAULT_SELECTOR_TIMEOUT_MS = 30_000
 const ALLOWED_PROTOCOLS = ["http:", "https:"]
 
 const validateUrl = (url: string): void => {
-  const parsed = new URL(url)
+  let parsed: URL
+
+  try {
+    parsed = new URL(url)
+  } catch (exception) {
+    throw new RenderingError(`Invalid URL: ${url}`, exception)
+  }
+
   if (!ALLOWED_PROTOCOLS.includes(parsed.protocol)) {
-    throw new Error(
+    throw new RenderingError(
       `Invalid URL protocol: ${parsed.protocol}. Only http and https are allowed.`
     )
+  }
+}
+
+const renderPage = async <A>(
+  page: Page,
+  url: string,
+  readyCssSelectors: Optional<string[]>,
+  execute: (page: Page) => Promise<A>,
+  selectorTimeoutMs: number
+): Promise<A> => {
+  const hasReadyCssSelectors =
+    readyCssSelectors !== undefined &&
+    readyCssSelectors !== null &&
+    readyCssSelectors.length > 0
+
+  try {
+    await page.goto(url, {
+      waitUntil: hasReadyCssSelectors ? undefined : "load",
+    })
+
+    if (hasReadyCssSelectors) {
+      const waitOptions: WaitForSelectorOptions = {
+        timeout: selectorTimeoutMs,
+      }
+      await readyCssSelectors.reduce<Promise<void>>(
+        async (promise, cssSelector) => {
+          await promise
+          await page.waitForSelector(cssSelector, waitOptions)
+        },
+        Promise.resolve()
+      )
+    }
+
+    return await execute(page)
+  } catch (exception) {
+    throw exception instanceof RenderingError
+      ? exception
+      : new RenderingError((exception as Error).message, exception)
   }
 }
 
@@ -53,32 +101,17 @@ export class PuppeteerRenderingService implements RenderingService {
       `Rendering url=${url} with readyCssSelectors=[${readyCssSelectors?.join(", ") || ""}]`
     )
     const browser = await launchBrowser()
-    const page = await browser.newPage()
-
-    const hasReadyCssSelectors =
-      readyCssSelectors !== undefined &&
-      readyCssSelectors !== null &&
-      readyCssSelectors.length > 0
 
     try {
-      await page.goto(url, {
-        waitUntil: hasReadyCssSelectors ? undefined : "load",
-      })
+      const page = await browser.newPage()
 
-      if (hasReadyCssSelectors) {
-        const waitOptions: WaitForSelectorOptions = {
-          timeout: selectorTimeoutMs,
-        }
-        await readyCssSelectors.reduce<Promise<void>>(
-          async (promise, cssSelector) => {
-            await promise
-            await page.waitForSelector(cssSelector, waitOptions)
-          },
-          Promise.resolve()
-        )
-      }
-
-      const result: A = await execute(page)
+      const result: A = await renderPage(
+        page,
+        url,
+        readyCssSelectors,
+        execute,
+        selectorTimeoutMs
+      )
 
       const endTime = this.clock.timestamp()
       const duration = endTime.getTime() - startTime.getTime()
