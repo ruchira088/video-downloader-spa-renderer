@@ -13,7 +13,7 @@ A Node.js/Express service that renders Single Page Applications (SPAs) using Pup
 
 ## Prerequisites
 
-- Node.js LTS (v18+)
+- Node.js 22 or later (CI runs on 24)
 - npm 10+
 - Git
 
@@ -34,24 +34,27 @@ Configuration is managed via the `config` npm package with JSON files in the `/c
 
 ### Default Configuration
 
-| Setting                  | Default   | Description         |
-| ------------------------ | --------- | ------------------- |
-| `httpConfiguration.host` | `0.0.0.0` | Server bind address |
-| `httpConfiguration.port` | `8000`    | Server port         |
+| Setting                                      | Default                                                  | Description                                       |
+| -------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------- |
+| `httpConfiguration.host`                     | `0.0.0.0`                                                | Server bind address (an IPv4 address)             |
+| `httpConfiguration.port`                     | `8000`                                                   | Server port                                       |
+| `healthCheckConfiguration.url`               | `https://spa-health-check.ruchij.com`                    | SPA rendered by the health check                  |
+| `healthCheckConfiguration.readyCssSelectors` | `["#text-field", ".class-name", ".deferred-class-name"]` | Selectors the health check waits for on that page |
 
 ### Environment Variables
 
-| Variable    | Config Path              | Description         |
-| ----------- | ------------------------ | ------------------- |
-| `HTTP_HOST` | `httpConfiguration.host` | Server host address |
-| `HTTP_PORT` | `httpConfiguration.port` | Server port         |
+| Variable           | Config Path                    | Description                      |
+| ------------------ | ------------------------------ | -------------------------------- |
+| `HTTP_HOST`        | `httpConfiguration.host`       | Server host address              |
+| `HTTP_PORT`        | `httpConfiguration.port`       | Server port                      |
+| `HEALTH_CHECK_URL` | `healthCheckConfiguration.url` | SPA rendered by the health check |
 
 ## Usage
 
 ### Development
 
 ```bash
-# Run with ts-node (development)
+# Run with tsx (development)
 npm start
 
 # Watch mode compilation
@@ -92,14 +95,14 @@ Returns application metadata.
 
 #### `GET /service/health-check`
 
-Performs comprehensive health checks including internet connectivity and SPA rendering capability.
+Checks internet connectivity (an HTTP GET of the health check SPA) and SPA rendering (rendering that SPA with Puppeteer and waiting for its selectors). The two checks run concurrently and give up after 5 and 10 seconds respectively. Each is reported as `healthy` or `unhealthy`; the status is 200 only when both are healthy.
 
 **Response (200 OK):**
 
 ```json
 {
-  "internetConnectivity": true,
-  "spaRendering": true
+  "internetConnectivity": "healthy",
+  "spaRendering": "healthy"
 }
 ```
 
@@ -107,8 +110,8 @@ Performs comprehensive health checks including internet connectivity and SPA ren
 
 ```json
 {
-  "internetConnectivity": true,
-  "spaRendering": false
+  "internetConnectivity": "healthy",
+  "spaRendering": "unhealthy"
 }
 ```
 
@@ -154,11 +157,11 @@ Executes JavaScript on a rendered page and returns the result.
 | `readyCssSelectors` | string[] | No       | CSS selectors to wait for |
 | `script`            | string   | Yes      | JavaScript to execute     |
 
-**Response:** `application/json` - Result of the JavaScript execution
+**Response:** The result of the JavaScript execution. A string is returned as `text/html`; anything else is serialised as `application/json`.
 
 ### Error Responses
 
-All errors return appropriate HTTP status codes with a JSON body:
+Errors return a JSON body:
 
 ```json
 {
@@ -166,27 +169,38 @@ All errors return appropriate HTTP status codes with a JSON body:
 }
 ```
 
+| Status | Cause                                                                                                                                      |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| 400    | The request could not be fulfilled: the URL was rejected, the page could not be reached, a selector never appeared, or the script threw    |
+| 400    | The request body failed validation. `errorMessages` then holds the validation issues (`code`, `path`, `message`) rather than plain strings |
+| 404    | Unknown endpoint                                                                                                                           |
+| 413    | Request body too large                                                                                                                     |
+| 500    | The renderer itself failed, for example Chromium could not be launched                                                                     |
+| 503    | A health check failed (`GET /service/health-check` only; the body is the health check result)                                              |
+
 ## Development
 
 ### Available Scripts
 
-| Command                 | Description                               |
-| ----------------------- | ----------------------------------------- |
-| `npm start`             | Run development server with ts-node       |
-| `npm run compile`       | Compile TypeScript to JavaScript          |
-| `npm run compile:watch` | Compile in watch mode                     |
-| `npm run clean-compile` | Clean build directory and recompile       |
-| `npm run execute`       | Run compiled production server            |
-| `npm run setup-config`  | Copy config files and generate build info |
-| `npm run lint`          | Run ESLint                                |
-| `npm run prettier`      | Check code formatting                     |
-| `npm run prettier:fix`  | Auto-fix formatting issues                |
-| `npm test`              | Run Jest tests                            |
+| Command                 | Description                                        |
+| ----------------------- | -------------------------------------------------- |
+| `npm start`             | Run development server with tsx                    |
+| `npm run compile`       | Compile TypeScript to JavaScript                   |
+| `npm run compile:watch` | Compile in watch mode                              |
+| `npm run clean-compile` | Clean build directory and recompile                |
+| `npm run execute`       | Run compiled production server                     |
+| `npm run setup-config`  | Copy config files and generate build info          |
+| `npm run typecheck`     | Type check the tests and scripts that `tsc` skips  |
+| `npm run lint`          | Run oxlint                                         |
+| `npm run prettier`      | Check code formatting                              |
+| `npm run prettier:fix`  | Auto-fix formatting issues                         |
+| `npm test`              | Run Jest tests                                     |
+| `npm run test:coverage` | Run Jest tests and enforce the coverage thresholds |
 
 ### Code Quality
 
 - **TypeScript** - Strict mode enabled
-- **ESLint** - TypeScript-aware linting with strict and stylistic rules
+- **oxlint** - Linting with the `correctness`, `suspicious` and `pedantic` rule sets
 - **Prettier** - Code formatting (2-space indent, double quotes, no semicolons)
 
 ### Testing
@@ -195,7 +209,13 @@ All errors return appropriate HTTP status codes with a JSON body:
 npm test
 ```
 
-Tests use Jest with ts-jest, Supertest for HTTP testing, and Cheerio for HTML parsing. Test timeout is set to 25 seconds to accommodate browser operations.
+Tests use Jest (types stripped by Babel), Supertest for HTTP testing, and Cheerio for HTML parsing. The test timeout is 60 seconds to accommodate browser operations, and coverage thresholds are enforced by `npm run test:coverage`.
+
+Tests sit next to the code they cover and come in three kinds:
+
+- `*.test.ts` - hermetic; Puppeteer is mocked where the rendering flow is under test
+- `*.integration.test.ts` - a real Chromium against a local fixture server
+- `*.smoke.test.ts` - renders the deployed health check SPA, so it needs internet access
 
 ## Docker
 
@@ -231,11 +251,11 @@ docker run -p 8000:8000 \
 
 Kubernetes manifests are available in `playbooks/k8s/`:
 
-- `namespace.yaml` - Namespace definition
-- `deployment.yaml` - Deployment configuration
-- `service.yaml` - Service definition
-- `ingress.yaml` - Ingress configuration
-- `certificate.yaml` - TLS certificate configuration
+- `Namespace.yaml` - Namespace definition
+- `Deployment.yaml` - Deployment configuration
+- `Service.yaml` - Service definition
+- `Ingress.yaml` - Ingress configuration
+- `DockerRegistryCredentials.yaml` - Image pull credentials
 
 Deploy to Kubernetes:
 
@@ -259,7 +279,8 @@ kubectl apply -f playbooks/k8s/
 │   │   └── RenderRouter.ts       # /render/* endpoints
 │   ├── middleware/               # Express middleware
 │   ├── logger/                   # Winston logger setup
-│   └── utils/                    # Helper utilities
+│   ├── utils/                    # Helper utilities
+│   └── test/                     # Fixtures shared by the tests
 ├── config/                       # Configuration files
 │   ├── default.json              # Default settings
 │   └── custom-environment-variables.json

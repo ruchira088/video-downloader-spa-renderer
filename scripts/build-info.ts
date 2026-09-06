@@ -28,7 +28,7 @@ const updateConfig = async (buildInfo: BuildInfo): Promise<void> => {
     __dirname,
     "../build/config/default.json"
   )
-  const config: Record<string, any> = JSON.parse(
+  const config: Record<string, unknown> = JSON.parse(
     await readFile(defaultConfigPath, "utf-8")
   )
   const updatedConfig = { ...config, buildInformation: buildInfo }

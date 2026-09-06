@@ -2,7 +2,8 @@ import request from "supertest"
 import express, { Express } from "express"
 import { createRenderRouter } from "./RenderRouter"
 import errorHandler from "../middleware/ErrorHandler"
-import { RenderingError, RenderingService } from "../services/RenderingService"
+import { RenderingService } from "../services/RenderingService"
+import { RenderingError } from "../services/RenderingError"
 
 describe("RenderRouter", () => {
   let renderingService: jest.Mocked<RenderingService>
@@ -179,7 +180,7 @@ describe("RenderRouter", () => {
       renderingService.execute.mockResolvedValue({
         title: "Page title",
         links: 3,
-      } as unknown as string)
+      })
 
       const response = await request(app)
         .post("/render/execute")
@@ -187,6 +188,22 @@ describe("RenderRouter", () => {
 
       expect(response.status).toBe(200)
       expect(response.body).toStrictEqual({ title: "Page title", links: 3 })
+    })
+
+    test.each([
+      ["a number", 42],
+      ["a boolean", false],
+      ["an array", ["a", "b"]],
+    ])("serialises %s result as JSON", async (_description, result) => {
+      renderingService.execute.mockResolvedValue(result)
+
+      const response = await request(app)
+        .post("/render/execute")
+        .send({ url: "https://example.com", script: "collect()" })
+
+      expect(response.status).toBe(200)
+      expect(response.headers["content-type"]).toMatch(/application\/json/u)
+      expect(response.body).toStrictEqual(result)
     })
 
     test("responds with 400 when the script fails", async () => {

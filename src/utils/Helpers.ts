@@ -1,36 +1,25 @@
 export type Optional<T> = T | undefined | null
 
-export const map = <A, B>(
-  value: A | undefined | null,
-  fn: (value: A) => B
-): B | undefined | null => {
-  if (value !== null && value !== undefined) {
-    return fn(value)
-  } else {
-    return value as undefined | null
-  }
-}
+export const errorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error)
 
-export const filter = <A>(
-  value: A | undefined | null,
-  fn: (value: A) => boolean
-): A | undefined | null => {
-  if (value === null || value === undefined) {
-    return value as undefined | null
-  } else if (fn(value)) {
-    return value
-  } else {
-    return null
-  }
-}
-
-export const sleep = (milliseconds: number): Promise<void> =>
-  new Promise((resolve) => {
-    setTimeout(resolve, milliseconds)
-  })
-
+/**
+ * Settles with the outcome of `promise`, or rejects once `timeoutMs` has
+ * elapsed without it settling. The timer is cleared as soon as the promise
+ * settles so that it does not keep the process alive.
+ */
 export const withTimeout = <A>(
   promise: Promise<A>,
-  timeout: number,
-  onTimeout: A
-): Promise<A> => Promise.race([promise, sleep(timeout).then(() => onTimeout)])
+  timeoutMs: number
+): Promise<A> =>
+  new Promise<A>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`Timed out after ${timeoutMs}ms`))
+    }, timeoutMs)
+
+    promise
+      .finally(() => {
+        clearTimeout(timer)
+      })
+      .then(resolve, reject)
+  })

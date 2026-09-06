@@ -1,6 +1,6 @@
 import puppeteer from "puppeteer"
-import { launchBrowser, PuppeteerRenderingService } from "./RenderingService"
-import { Clock } from "../utils/Clock"
+import { PuppeteerRenderingService } from "./RenderingService"
+import { fixedClock } from "../test/FixedClock"
 import {
   asBrowser,
   createMockBrowser,
@@ -23,15 +23,13 @@ const mockedLaunch = puppeteer.launch as jest.MockedFunction<
 >
 
 describe("RenderingService", () => {
-  const mockClock: Clock = {
-    timestamp: () => new Date("2024-01-01T00:00:00.000Z"),
-  }
-
   let page: MockPage
   let browser: MockBrowser
 
-  const createRenderingService = (): PuppeteerRenderingService =>
-    new PuppeteerRenderingService(mockClock)
+  const createRenderingService = (
+    selectorTimeoutMs?: number
+  ): PuppeteerRenderingService =>
+    new PuppeteerRenderingService(fixedClock(), selectorTimeoutMs)
 
   beforeEach(() => {
     page = createMockPage()
@@ -44,14 +42,12 @@ describe("RenderingService", () => {
     jest.clearAllMocks()
   })
 
-  describe("launchBrowser", () => {
-    test("launches a headless browser without the Chromium sandbox", async () => {
-      await launchBrowser()
+  test("launches a headless browser without the Chromium sandbox", async () => {
+    await createRenderingService().render("https://example.com", null)
 
-      expect(mockedLaunch).toHaveBeenCalledWith({
-        args: ["--disable-dev-shm-usage", "--no-sandbox"],
-        headless: true,
-      })
+    expect(mockedLaunch).toHaveBeenCalledWith({
+      args: ["--disable-dev-shm-usage", "--no-sandbox"],
+      headless: true,
     })
   })
 
@@ -71,8 +67,9 @@ describe("RenderingService", () => {
       ["null", null],
       ["undefined", undefined],
       ["an empty array", []],
+      ["a selector", ["#app"]],
     ])(
-      "waits for the load event when readyCssSelectors is %s",
+      "navigates and waits for the load event when readyCssSelectors is %s",
       async (_description, readyCssSelectors) => {
         await createRenderingService().render(
           "https://example.com",
@@ -82,17 +79,24 @@ describe("RenderingService", () => {
         expect(page.goto).toHaveBeenCalledWith("https://example.com", {
           waitUntil: "load",
         })
-        expect(page.waitForSelector).not.toHaveBeenCalled()
       }
     )
 
-    test("does not wait for the load event when selectors are supplied", async () => {
-      await createRenderingService().render("https://example.com", ["#app"])
+    test.each([
+      ["null", null],
+      ["undefined", undefined],
+      ["an empty array", []],
+    ])(
+      "does not wait for any selector when readyCssSelectors is %s",
+      async (_description, readyCssSelectors) => {
+        await createRenderingService().render(
+          "https://example.com",
+          readyCssSelectors
+        )
 
-      expect(page.goto).toHaveBeenCalledWith("https://example.com", {
-        waitUntil: undefined,
-      })
-    })
+        expect(page.waitForSelector).not.toHaveBeenCalled()
+      }
+    )
 
     test("waits for every selector with the default 30s timeout", async () => {
       await createRenderingService().render("https://example.com", [
@@ -106,6 +110,16 @@ describe("RenderingService", () => {
       })
       expect(page.waitForSelector).toHaveBeenNthCalledWith(2, ".second", {
         timeout: 30_000,
+      })
+    })
+
+    test("waits for every selector with the configured timeout", async () => {
+      await createRenderingService(1_000).render("https://example.com", [
+        "#app",
+      ])
+
+      expect(page.waitForSelector).toHaveBeenCalledWith("#app", {
+        timeout: 1_000,
       })
     })
 
@@ -168,6 +182,18 @@ describe("RenderingService", () => {
       expect(result).toBe("Page title")
       expect(page.evaluate).toHaveBeenCalledWith("document.title")
       expect(browser.close).toHaveBeenCalledTimes(1)
+    })
+
+    test("returns whatever the script evaluates to", async () => {
+      page.evaluate.mockResolvedValue({ links: 3 })
+
+      const result = await createRenderingService().execute(
+        "https://example.com",
+        "collect()",
+        null
+      )
+
+      expect(result).toEqual({ links: 3 })
     })
 
     test("waits for the selectors before evaluating the script", async () => {

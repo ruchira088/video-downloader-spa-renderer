@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio"
 import { PuppeteerRenderingService } from "./RenderingService"
-import { Clock } from "../utils/Clock"
+import { fixedClock } from "../test/FixedClock"
 import {
   deferredContentPage,
   staticPage,
@@ -13,11 +13,7 @@ import {
 // `RenderingService.test.ts` cannot: navigation, deferred DOM updates and
 // in-page script evaluation.
 describe("RenderingService against a real browser", () => {
-  const mockClock: Clock = {
-    timestamp: () => new Date("2024-01-01T00:00:00.000Z"),
-  }
-
-  const renderingService = new PuppeteerRenderingService(mockClock)
+  const renderingService = new PuppeteerRenderingService(fixedClock())
 
   let server: TestHttpServer
 
@@ -79,14 +75,13 @@ describe("RenderingService against a real browser", () => {
     })
 
     test("rejects when a selector does not appear before the timeout", async () => {
+      const impatientRenderingService = new PuppeteerRenderingService(
+        fixedClock(),
+        1_000
+      )
+
       await expect(
-        renderingService.run(
-          server.urlFor("/never"),
-          [".deferred"],
-          (page) => page.content(),
-          "rendered",
-          1_000
-        )
+        impatientRenderingService.render(server.urlFor("/never"), [".deferred"])
       ).rejects.toThrow(/\.deferred/u)
     })
 

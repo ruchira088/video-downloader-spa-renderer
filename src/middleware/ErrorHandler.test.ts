@@ -1,7 +1,7 @@
 import request from "supertest"
 import express, { Express, NextFunction, Request, Response } from "express"
 import errorHandler from "./ErrorHandler"
-import { z, ZodError } from "zod/v4"
+import { z, ZodError } from "zod"
 
 describe("ErrorHandler middleware", () => {
   const createTestApp = (errorToThrow: () => Error): Express => {
@@ -67,6 +67,48 @@ describe("ErrorHandler middleware", () => {
     expect(response.status).toBe(500)
     expect(response.body.errorMessages).toHaveLength(1)
   })
+
+  // Express middleware attaches a status to the errors it raises, and so does
+  // `RenderingError`; a client mistake must not be reported as a server failure.
+  test.each([
+    ["status", { status: 400 }, 400],
+    ["statusCode", { statusCode: 413 }, 413],
+    ["status ahead of statusCode", { status: 422, statusCode: 500 }, 422],
+  ])(
+    "honours the 4xx %s carried by the error",
+    async (_description, properties, expectedStatus) => {
+      const app = createTestApp(() =>
+        Object.assign(new Error("Client mistake"), properties)
+      )
+
+      const response = await request(app).get("/test")
+
+      expect(response.status).toBe(expectedStatus)
+      expect(response.body).toStrictEqual({
+        errorMessages: ["Client mistake"],
+      })
+    }
+  )
+
+  test.each([
+    ["a 5xx status", { status: 502 }],
+    ["a 3xx status", { status: 302 }],
+    ["a status that is not a number", { status: "400" }],
+  ])(
+    "responds with 500 when the error carries %s",
+    async (_name, properties) => {
+      const app = createTestApp(() =>
+        Object.assign(new Error("Not a client mistake"), properties)
+      )
+
+      const response = await request(app).get("/test")
+
+      expect(response.status).toBe(500)
+      expect(response.body).toStrictEqual({
+        errorMessages: ["Not a client mistake"],
+      })
+    }
+  )
 
   test("responds with 500 and an empty message when the error has none", async () => {
     const app = createTestApp(() => new Error())

@@ -18,8 +18,9 @@
     "unicorn/no-immediate-mutation": "off",
     // The scripts are CommonJS, so top-level await is not available.
     "unicorn/prefer-top-level-await": "off",
-    // oxlint 1.79 does not exclude type-only declarations, so it flags the
-    // Zod idiom of a schema `const X` beside `type X = z.infer<typeof X>`.
+    // oxlint (still, as of 1.81) does not exclude type-only declarations, so
+    // it flags the Zod idiom of a schema `const X` beside
+    // `type X = z.infer<typeof X>`.
     // A value and a type may legally share a name in TypeScript.
     "eslint/no-redeclare": "off"
   }

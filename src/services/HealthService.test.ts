@@ -4,6 +4,7 @@ import { AxiosInstance } from "axios"
 import { BuildInformation } from "../config/BuildInformation"
 import { HealthCheckConfiguration } from "../config/HealthCheckConfiguration"
 import { Clock } from "../utils/Clock"
+import { fixedClock } from "../test/FixedClock"
 
 describe("HealthService", () => {
   const mockPackageJson: PackageJson = { name: "test-app" }
@@ -18,12 +19,6 @@ describe("HealthService", () => {
     url: "https://example.com",
     readyCssSelectors: ["#test"],
   }
-
-  const fixedClock = (
-    timestamp: string = "2024-01-01T00:00:00.000Z"
-  ): Clock => ({
-    timestamp: () => new Date(timestamp),
-  })
 
   const createHealthService = ({
     renderingService = {} as jest.Mocked<RenderingService>,
@@ -51,6 +46,23 @@ describe("HealthService", () => {
 
   const axiosInstanceThat = (get: jest.Mock): AxiosInstance =>
     ({ get }) as unknown as AxiosInstance
+
+  const rendering = {
+    succeeds: () => renderingServiceThat(jest.fn().mockResolvedValue("<html>")),
+    fails: () =>
+      renderingServiceThat(jest.fn().mockRejectedValue(new Error("Failed"))),
+    hangs: () => renderingServiceThat(jest.fn().mockReturnValue(neverEnds())),
+  }
+
+  const connectivity = {
+    succeeds: () =>
+      axiosInstanceThat(jest.fn().mockResolvedValue({ status: 200 })),
+    fails: () =>
+      axiosInstanceThat(
+        jest.fn().mockRejectedValue(new Error("Network error"))
+      ),
+    hangs: () => axiosInstanceThat(jest.fn().mockReturnValue(neverEnds())),
+  }
 
   describe("serviceInformation", () => {
     test("returns application information", () => {
@@ -109,58 +121,53 @@ describe("HealthService", () => {
     })
 
     test("returns healthy when both checks pass", async () => {
-      const render = jest.fn().mockResolvedValue("<html></html>")
-      const get = jest.fn().mockResolvedValue({ status: 200 })
+      const renderingService = rendering.succeeds()
+      const axiosInstance = connectivity.succeeds()
 
       const result = await createHealthService({
-        renderingService: renderingServiceThat(render),
-        axiosInstance: axiosInstanceThat(get),
+        renderingService,
+        axiosInstance,
       }).healthCheck()
 
       expect(result).toStrictEqual({
         internetConnectivity: HealthStatus.Healthy,
         spaRendering: HealthStatus.Healthy,
       })
-      expect(get).toHaveBeenCalledWith("https://example.com")
-      expect(render).toHaveBeenCalledWith("https://example.com", ["#test"])
+      expect(axiosInstance.get).toHaveBeenCalledWith("https://example.com")
+      expect(renderingService.render).toHaveBeenCalledWith(
+        "https://example.com",
+        ["#test"]
+      )
     })
 
     test("returns unhealthy for internet connectivity when the request fails", async () => {
       const result = await createHealthService({
-        renderingService: renderingServiceThat(
-          jest.fn().mockResolvedValue("<html></html>")
-        ),
-        axiosInstance: axiosInstanceThat(
-          jest.fn().mockRejectedValue(new Error("Network error"))
-        ),
+        renderingService: rendering.succeeds(),
+        axiosInstance: connectivity.fails(),
       }).healthCheck()
 
-      expect(result.internetConnectivity).toBe(HealthStatus.Unhealthy)
-      expect(result.spaRendering).toBe(HealthStatus.Healthy)
+      expect(result).toStrictEqual({
+        internetConnectivity: HealthStatus.Unhealthy,
+        spaRendering: HealthStatus.Healthy,
+      })
     })
 
     test("returns unhealthy for SPA rendering when the render fails", async () => {
       const result = await createHealthService({
-        renderingService: renderingServiceThat(
-          jest.fn().mockRejectedValue(new Error("Render failed"))
-        ),
-        axiosInstance: axiosInstanceThat(
-          jest.fn().mockResolvedValue({ status: 200 })
-        ),
+        renderingService: rendering.fails(),
+        axiosInstance: connectivity.succeeds(),
       }).healthCheck()
 
-      expect(result.internetConnectivity).toBe(HealthStatus.Healthy)
-      expect(result.spaRendering).toBe(HealthStatus.Unhealthy)
+      expect(result).toStrictEqual({
+        internetConnectivity: HealthStatus.Healthy,
+        spaRendering: HealthStatus.Unhealthy,
+      })
     })
 
     test("returns unhealthy when both checks fail", async () => {
       const result = await createHealthService({
-        renderingService: renderingServiceThat(
-          jest.fn().mockRejectedValue(new Error("Render failed"))
-        ),
-        axiosInstance: axiosInstanceThat(
-          jest.fn().mockRejectedValue(new Error("Network error"))
-        ),
+        renderingService: rendering.fails(),
+        axiosInstance: connectivity.fails(),
       }).healthCheck()
 
       expect(result).toStrictEqual({
@@ -177,9 +184,7 @@ describe("HealthService", () => {
       "returns unhealthy for internet connectivity on %s response",
       async (_name, status) => {
         const result = await createHealthService({
-          renderingService: renderingServiceThat(
-            jest.fn().mockResolvedValue("<html></html>")
-          ),
+          renderingService: rendering.succeeds(),
           axiosInstance: axiosInstanceThat(
             jest.fn().mockResolvedValue({ status })
           ),
@@ -191,12 +196,8 @@ describe("HealthService", () => {
 
     test("gives up on the internet connectivity check after 5 seconds", async () => {
       const healthCheck = createHealthService({
-        renderingService: renderingServiceThat(
-          jest.fn().mockResolvedValue("<html></html>")
-        ),
-        axiosInstance: axiosInstanceThat(
-          jest.fn().mockReturnValue(neverEnds())
-        ),
+        renderingService: rendering.succeeds(),
+        axiosInstance: connectivity.hangs(),
       }).healthCheck()
 
       await jest.advanceTimersByTimeAsync(5_000)
@@ -209,12 +210,8 @@ describe("HealthService", () => {
 
     test("gives up on the SPA rendering check after 10 seconds", async () => {
       const healthCheck = createHealthService({
-        renderingService: renderingServiceThat(
-          jest.fn().mockReturnValue(neverEnds())
-        ),
-        axiosInstance: axiosInstanceThat(
-          jest.fn().mockResolvedValue({ status: 200 })
-        ),
+        renderingService: rendering.hangs(),
+        axiosInstance: connectivity.succeeds(),
       }).healthCheck()
 
       await jest.advanceTimersByTimeAsync(10_000)
@@ -226,19 +223,44 @@ describe("HealthService", () => {
     })
 
     test("starts both checks before awaiting either of them", async () => {
-      const render = jest.fn().mockReturnValue(neverEnds())
-      const get = jest.fn().mockReturnValue(neverEnds())
+      const renderingService = rendering.hangs()
+      const axiosInstance = connectivity.hangs()
 
       const healthCheck = createHealthService({
-        renderingService: renderingServiceThat(render),
-        axiosInstance: axiosInstanceThat(get),
+        renderingService,
+        axiosInstance,
       }).healthCheck()
 
-      expect(get).toHaveBeenCalledTimes(1)
-      expect(render).toHaveBeenCalledTimes(1)
+      expect(axiosInstance.get).toHaveBeenCalledTimes(1)
+      expect(renderingService.render).toHaveBeenCalledTimes(1)
 
-      await jest.advanceTimersByTimeAsync(15_000)
+      await jest.advanceTimersByTimeAsync(10_000)
       await healthCheck
+    })
+
+    // The timeouts run concurrently, so the check as a whole is bounded by
+    // the longer of the two rather than by their sum.
+    test("completes within 10 seconds even when both checks hang", async () => {
+      const healthCheck = createHealthService({
+        renderingService: rendering.hangs(),
+        axiosInstance: connectivity.hangs(),
+      }).healthCheck()
+
+      await jest.advanceTimersByTimeAsync(10_000)
+
+      await expect(healthCheck).resolves.toStrictEqual({
+        internetConnectivity: HealthStatus.Unhealthy,
+        spaRendering: HealthStatus.Unhealthy,
+      })
+    })
+
+    test("leaves no timer running once both checks have settled", async () => {
+      await createHealthService({
+        renderingService: rendering.succeeds(),
+        axiosInstance: connectivity.succeeds(),
+      }).healthCheck()
+
+      expect(jest.getTimerCount()).toBe(0)
     })
   })
 })

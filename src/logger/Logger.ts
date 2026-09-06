@@ -1,14 +1,5 @@
 import { createLogger, format, Logger, transports } from "winston"
-import path from "path"
-import { TransformableInfo } from "logform"
-
-const templateFunction = (info: {
-  timestamp: string
-  level: string
-  message: string
-  label: string
-}): string =>
-  `${info.timestamp} ${info.label}  ${info.level.toUpperCase()}\t${info.message}`
+import path from "node:path"
 
 export const create = (name: string): Logger =>
   createLogger({
@@ -16,7 +7,10 @@ export const create = (name: string): Logger =>
     format: format.combine(
       format.timestamp(),
       format.label({ label: path.basename(name) }),
-      format.printf(templateFunction as (info: TransformableInfo) => string)
+      format.printf(
+        (info) =>
+          `${info.timestamp} ${info.label}  ${info.level.toUpperCase()}\t${info.message}`
+      )
     ),
     // Jest sets NODE_ENV to "test"; keeping the transport silent there
     // stops the log lines from drowning out the test report.

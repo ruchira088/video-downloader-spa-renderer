@@ -1,14 +1,15 @@
 import { NextFunction, Request, Response } from "express"
+import { ZodError } from "zod"
 import { create as createLogger } from "../logger/Logger"
-import { ZodError } from "zod/v4"
 
 const logger = createLogger(__filename)
 
 /**
- * Express middleware attaches an HTTP status to the errors it raises - a
- * malformed JSON body, for example, surfaces as an `entity.parse.failed`
- * error carrying a 400. Honouring it stops client mistakes from being
- * reported as server failures.
+ * Errors that describe a client mistake carry a 4xx status: Express attaches
+ * one to the errors its middleware raises (a malformed JSON body surfaces as
+ * an `entity.parse.failed` error with a 400) and `RenderingError` carries one
+ * too. Honouring it stops client mistakes from being reported as server
+ * failures.
  */
 const clientErrorStatus = (error: Error): number | undefined => {
   const { status, statusCode } = error as {
@@ -22,25 +23,26 @@ const clientErrorStatus = (error: Error): number | undefined => {
     : undefined
 }
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
+// Express recognises error handlers by their arity, so the unused `next`
+// parameter has to stay.
 const errorHandler = (
   error: Error,
   request: Request,
   response: Response,
-  next: NextFunction
-) => {
+  _next: NextFunction
+): void => {
+  if (error instanceof ZodError) {
+    response.status(400).json({ errorMessages: error.issues })
+    return
+  }
+
   const status = clientErrorStatus(error)
 
-  if (error instanceof ZodError) {
-    const zodError = error as ZodError
-    response.status(400).json({ errorMessages: zodError.issues })
-  } else if (status === undefined) {
+  if (status === undefined) {
     logger.error(error.stack)
-    response.status(500).json({ errorMessages: [error.message] })
-  } else {
-    response.status(status).json({ errorMessages: [error.message] })
   }
+
+  response.status(status ?? 500).json({ errorMessages: [error.message] })
 }
-/* eslint-enable @typescript-eslint/no-unused-vars */
 
 export default errorHandler

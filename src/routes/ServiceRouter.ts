@@ -9,21 +9,20 @@ export const createServiceRouter = (healthService: HealthService): Router =>
   express
     .Router()
     .get("/information", (request: Request, response: Response) => {
-      response.status(200).json(healthService.serviceInformation())
+      response.json(healthService.serviceInformation())
     })
     .get("/health-check", async (request: Request, response: Response) => {
       const healthCheck = await healthService.healthCheck()
 
-      const statusCode: 200 | 503 = Object.values<HealthStatus>(
-        healthCheck
-      ).some((healthStatus) => healthStatus === HealthStatus.Unhealthy)
-        ? 503
-        : 200
+      const unhealthy = Object.values(healthCheck).includes(
+        HealthStatus.Unhealthy
+      )
 
-      if (statusCode !== 200)
+      if (unhealthy) {
         logger.warn(
           `Health check failed response=${JSON.stringify(healthCheck)}`
         )
+      }
 
-      response.status(statusCode).json(healthCheck)
+      response.status(unhealthy ? 503 : 200).json(healthCheck)
     })

@@ -1,69 +1,25 @@
-import { filter, map, sleep, withTimeout } from "./Helpers"
+import { errorMessage, withTimeout } from "./Helpers"
 
 describe("Helpers", () => {
-  describe("map", () => {
-    test("applies the function to a present value", () => {
-      expect(map(2, (value) => value * 3)).toBe(6)
+  describe("errorMessage", () => {
+    test("returns the message of an Error", () => {
+      expect(errorMessage(new Error("Boom"))).toBe("Boom")
     })
 
-    test("applies the function to falsy but present values", () => {
-      expect(map(0, (value) => value + 1)).toBe(1)
-      expect(map("", (value) => `${value}!`)).toBe("!")
-      expect(map(false, (value) => !value)).toBe(true)
-    })
-
-    test.each([
-      ["null", null],
-      ["undefined", undefined],
-    ])("passes %s through without calling the function", (_name, value) => {
-      const fn = jest.fn()
-
-      expect(map(value, fn)).toBe(value)
-      expect(fn).not.toHaveBeenCalled()
-    })
-  })
-
-  describe("filter", () => {
-    test("returns the value when the predicate holds", () => {
-      expect(filter("value", (input) => input.length > 0)).toBe("value")
-    })
-
-    test("returns null when the predicate fails", () => {
-      expect(filter("", (input) => input.length > 0)).toBeNull()
+    test("returns the message of an Error subclass", () => {
+      expect(errorMessage(new TypeError("Not a function"))).toBe(
+        "Not a function"
+      )
     })
 
     test.each([
-      ["null", null],
-      ["undefined", undefined],
-    ])("passes %s through without calling the predicate", (_name, value) => {
-      const predicate = jest.fn()
-
-      expect(filter(value, predicate)).toBe(value)
-      expect(predicate).not.toHaveBeenCalled()
-    })
-  })
-
-  describe("sleep", () => {
-    beforeEach(() => {
-      jest.useFakeTimers()
-    })
-
-    afterEach(() => {
-      jest.useRealTimers()
-    })
-
-    test("resolves once the delay has elapsed", async () => {
-      let resolved = false
-      const sleeping = sleep(1_000).then(() => {
-        resolved = true
-      })
-
-      await jest.advanceTimersByTimeAsync(999)
-      expect(resolved).toBe(false)
-
-      await jest.advanceTimersByTimeAsync(1)
-      await sleeping
-      expect(resolved).toBe(true)
+      ["a string", "connection dropped", "connection dropped"],
+      ["a number", 42, "42"],
+      ["null", null, "null"],
+      ["undefined", undefined, "undefined"],
+      ["an object", { code: 1 }, "[object Object]"],
+    ])("describes %s that was thrown", (_description, thrown, expected) => {
+      expect(errorMessage(thrown)).toBe(expected)
     })
   })
 
@@ -76,46 +32,57 @@ describe("Helpers", () => {
       jest.useRealTimers()
     })
 
-    test("returns the value when the promise settles first", async () => {
-      const result = withTimeout(Promise.resolve("value"), 1_000, "fallback")
-
-      await expect(result).resolves.toBe("value")
+    const never = new Promise<string>(() => {
+      /* never settles */
     })
 
-    test("returns the fallback when the timeout elapses first", async () => {
-      const result = withTimeout(
-        new Promise<string>(() => {
-          /* never settles */
-        }),
-        1_000,
-        "fallback"
+    const after = <A>(milliseconds: number, value: A): Promise<A> =>
+      new Promise((resolve) => {
+        setTimeout(() => resolve(value), milliseconds)
+      })
+
+    test("returns the value when the promise settles first", async () => {
+      await expect(withTimeout(Promise.resolve("value"), 1_000)).resolves.toBe(
+        "value"
+      )
+    })
+
+    test("rejects when the timeout elapses first", async () => {
+      const assertion = expect(withTimeout(never, 1_000)).rejects.toThrow(
+        "Timed out after 1000ms"
       )
 
       await jest.advanceTimersByTimeAsync(1_000)
 
-      await expect(result).resolves.toBe("fallback")
+      await assertion
     })
 
     test("returns the value when the promise settles just before the timeout", async () => {
-      const result = withTimeout(
-        sleep(999).then(() => "value"),
-        1_000,
-        "fallback"
-      )
+      const result = withTimeout(after(999, "value"), 1_000)
 
       await jest.advanceTimersByTimeAsync(1_000)
 
       await expect(result).resolves.toBe("value")
     })
 
-    test("propagates a rejection rather than falling back", async () => {
-      const result = withTimeout(
-        Promise.reject(new Error("Boom")),
-        1_000,
-        "fallback"
-      )
+    test("propagates a rejection rather than timing out", async () => {
+      await expect(
+        withTimeout(Promise.reject(new Error("Boom")), 1_000)
+      ).rejects.toThrow("Boom")
+    })
 
-      await expect(result).rejects.toThrow("Boom")
+    test("clears the timer once the promise settles", async () => {
+      await withTimeout(Promise.resolve("value"), 1_000)
+
+      expect(jest.getTimerCount()).toBe(0)
+    })
+
+    test("keeps the timer running until the promise settles", () => {
+      withTimeout(never, 1_000).catch(() => {
+        /* the rejection is expected */
+      })
+
+      expect(jest.getTimerCount()).toBe(1)
     })
   })
 })

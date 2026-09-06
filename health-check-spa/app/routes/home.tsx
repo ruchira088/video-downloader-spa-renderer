@@ -1,15 +1,7 @@
-import type { Route } from "./+types/home"
-import React, { type FC, useEffect, useState } from "react"
+import { type FC, useEffect, useState } from "react"
 import axios from "axios"
 
 import "./home.css"
-
-export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
-  ]
-}
 
 const App: FC = () => {
   const [label, setLabel] = useState<string | null>(null)

@@ -5,9 +5,9 @@ import { BuildInformation } from "../config/BuildInformation"
 import { HealthCheckConfiguration } from "../config/HealthCheckConfiguration"
 import { Clock } from "../utils/Clock"
 import { RenderingService } from "./RenderingService"
-import { withTimeout } from "../utils/Helpers"
+import { errorMessage, withTimeout } from "../utils/Helpers"
 
-type ApplicationInformation = {
+export type ApplicationInformation = {
   readonly name: string
   readonly timestamp: string
   readonly gitBranch: string
@@ -35,6 +35,9 @@ export interface HealthService {
   healthCheck(): Promise<HealthCheck>
 }
 
+const INTERNET_CONNECTIVITY_TIMEOUT_MS = 5_000
+const SPA_RENDERING_TIMEOUT_MS = 10_000
+
 const logger: Logger = createLogger(__filename)
 
 export class HealthServiceImpl implements HealthService {
@@ -59,44 +62,43 @@ export class HealthServiceImpl implements HealthService {
   }
 
   async healthCheck(): Promise<HealthCheck> {
-    const healthCheckUrl = this.healthCheckConfiguration.url
-    const readyCssSelectors = this.healthCheckConfiguration.readyCssSelectors
+    const { url, readyCssSelectors } = this.healthCheckConfiguration
 
-    const internetConnectivity: Promise<HealthStatus> = this.axiosInstance
-      .get(healthCheckUrl)
-      .then<HealthStatus>((response) =>
-        response.status === 200 ? HealthStatus.Healthy : HealthStatus.Unhealthy
+    // Both checks run concurrently, so the whole health check is bounded by
+    // the longer of the two timeouts rather than by their sum.
+    const [internetConnectivity, spaRendering] = await Promise.all([
+      this.status(
+        "Internet connectivity",
+        INTERNET_CONNECTIVITY_TIMEOUT_MS,
+        this.axiosInstance.get(url).then((response) => {
+          if (response.status !== 200) {
+            throw new Error(`Unexpected HTTP status ${response.status}`)
+          }
+        })
+      ),
+      this.status(
+        "SPA rendering",
+        SPA_RENDERING_TIMEOUT_MS,
+        this.renderingService.render(url, readyCssSelectors)
+      ),
+    ])
+
+    return { internetConnectivity, spaRendering }
+  }
+
+  private async status(
+    description: string,
+    timeoutMs: number,
+    check: Promise<unknown>
+  ): Promise<HealthStatus> {
+    try {
+      await withTimeout(check, timeoutMs)
+      return HealthStatus.Healthy
+    } catch (exception) {
+      logger.error(
+        `Health check failed for ${description} url=${this.healthCheckConfiguration.url} error=${errorMessage(exception)}`
       )
-      .catch((exception) => {
-        logger.error(
-          `Health check failed for Internet connectivity url=${healthCheckUrl}`,
-          exception.message
-        )
-        return HealthStatus.Unhealthy
-      })
-
-    const spaRendering: Promise<HealthStatus> = this.renderingService
-      .render(healthCheckUrl, readyCssSelectors)
-      .then<HealthStatus>(() => HealthStatus.Healthy)
-      .catch((exception) => {
-        logger.error(
-          `Health check failed for SPA rendering url=${healthCheckUrl}`,
-          exception.message
-        )
-        return HealthStatus.Unhealthy
-      })
-
-    return {
-      internetConnectivity: await withTimeout(
-        internetConnectivity,
-        5_000,
-        HealthStatus.Unhealthy
-      ),
-      spaRendering: await withTimeout(
-        spaRendering,
-        10_000,
-        HealthStatus.Unhealthy
-      ),
+      return HealthStatus.Unhealthy
     }
   }
 }

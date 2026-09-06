@@ -4,6 +4,9 @@ RUN apk add git
 
 WORKDIR /opt/app
 
+# The build stage only compiles TypeScript, so it has no use for a browser.
+ENV PUPPETEER_SKIP_DOWNLOAD="true"
+
 ADD package.json .
 ADD package-lock.json .
 
@@ -31,7 +34,7 @@ RUN apk add --no-cache \
       ca-certificates \
       ttf-freefont
 
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD="true"
+ENV PUPPETEER_SKIP_DOWNLOAD="true"
 ENV PUPPETEER_EXECUTABLE_PATH="/usr/bin/chromium-browser"
 
 WORKDIR /opt/app/build
