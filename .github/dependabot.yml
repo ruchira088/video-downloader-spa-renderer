@@ -1,0 +1,41 @@
+version: 2
+
+updates:
+  # The renderer service. Minor and patch bumps arrive together in one PR so
+  # that CI runs the Chromium-backed suite once per week rather than once per
+  # package; a major bump still gets its own PR.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Australia/Sydney
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # The health-check SPA is an independent npm project, deployed on push to
+  # main by health-check-app.yml.
+  - package-ecosystem: npm
+    directory: /health-check-spa
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Australia/Sydney
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Australia/Sydney
