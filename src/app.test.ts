@@ -11,6 +11,7 @@ import {
   startTestHttpServer,
   TestHttpServer,
 } from "./test/TestHttpServer"
+import { allowAllHosts } from "./services/HostPolicy"
 
 describe("HTTP application", () => {
   const appConfig = ApplicationConfiguration.parse(config)
@@ -167,17 +168,31 @@ describe("HTTP application", () => {
         "/static": staticPage,
       })
 
-      app = createAppFromConfig({
-        ...appConfig,
-        healthCheckConfiguration: {
-          url: server.url,
-          readyCssSelectors: ["#immediate", ".deferred"],
+      app = createAppFromConfig(
+        {
+          ...appConfig,
+          healthCheckConfiguration: {
+            url: server.url,
+            readyCssSelectors: ["#immediate", ".deferred"],
+          },
         },
-      })
+        allowAllHosts
+      )
     })
 
     afterAll(async () => {
       await server.close()
+    })
+
+    test("refuses to render a local address by default", async () => {
+      const response = await request(createAppFromConfig(appConfig))
+        .post("/render")
+        .send({ url: server.urlFor("/static") })
+
+      expect(response.status).toBe(400)
+      expect(response.body).toStrictEqual({
+        errorMessages: ["Blocked host: 127.0.0.1"],
+      })
     })
 
     test("renders a page including its deferred content", async () => {

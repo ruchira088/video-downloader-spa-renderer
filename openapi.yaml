@@ -107,8 +107,8 @@ paths:
         "400":
           description: |
             The request could not be fulfilled: the body failed validation, the URL was
-            rejected, the page could not be reached, or a `readyCssSelectors` entry never
-            appeared.
+            rejected (not http/https, or pointing at a private or local address), the page
+            could not be reached, or a `readyCssSelectors` entry never appeared.
           content:
             application/json:
               schema:
@@ -173,8 +173,9 @@ paths:
         "400":
           description: |
             The request could not be fulfilled: the body failed validation, the URL was
-            rejected, the page could not be reached, a `readyCssSelectors` entry never
-            appeared, or the script threw.
+            rejected (not http/https, or pointing at a private or local address), the page
+            could not be reached, a `readyCssSelectors` entry never appeared, or the script
+            threw.
           content:
             application/json:
               schema:

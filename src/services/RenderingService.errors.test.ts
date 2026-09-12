@@ -9,6 +9,7 @@ import {
   MockBrowser,
   MockPage,
 } from "../test/MockBrowser"
+import { allowAllHosts, HostPolicy } from "./HostPolicy"
 
 // Failures of the request itself are reported as a `RenderingError` so that
 // the error handler can answer with a 400, while failures of the renderer are
@@ -35,8 +36,10 @@ describe("RenderingService error classification", () => {
   let page: MockPage
   let browser: MockBrowser
 
-  const createRenderingService = (): PuppeteerRenderingService =>
-    new PuppeteerRenderingService(fixedClock())
+  const createRenderingService = (
+    hostPolicy: HostPolicy = allowAllHosts
+  ): PuppeteerRenderingService =>
+    new PuppeteerRenderingService(fixedClock(), hostPolicy)
 
   beforeEach(() => {
     page = createMockPage()
@@ -105,6 +108,44 @@ describe("RenderingService error classification", () => {
         ).resolves.toBeDefined()
       }
     )
+  })
+
+  describe("host policy", () => {
+    const blockEverything: HostPolicy = {
+      isAllowed: () => Promise.resolve(false),
+    }
+
+    test("reports a blocked host as a request failure", async () => {
+      const exception = await rejectionOf(
+        createRenderingService(blockEverything).render(
+          "http://169.254.169.254/latest/meta-data/",
+          null
+        )
+      )
+
+      expect(exception).toBeInstanceOf(RenderingError)
+      expect(exception).toMatchObject({
+        message: "Blocked host: 169.254.169.254",
+      })
+    })
+
+    test("does not launch a browser when the host is blocked", async () => {
+      await expect(
+        createRenderingService(blockEverything).render("http://10.0.0.5/", null)
+      ).rejects.toThrow("Blocked host: 10.0.0.5")
+
+      expect(mockedLaunch).not.toHaveBeenCalled()
+    })
+
+    test("applies the policy to execute", async () => {
+      await expect(
+        createRenderingService(blockEverything).execute(
+          "http://localhost:8000/",
+          "document.title",
+          null
+        )
+      ).rejects.toThrow("Blocked host: localhost")
+    })
   })
 
   describe("errors attributable to the request", () => {

@@ -3,17 +3,23 @@ import { PuppeteerRenderingService } from "./RenderingService"
 import { fixedClock } from "../test/FixedClock"
 import {
   deferredContentPage,
+  fetchingPage,
+  inlineImagePage,
   staticPage,
   startTestHttpServer,
   TestHttpServer,
 } from "../test/TestHttpServer"
+import { allowAllHosts, HostPolicy, publicHostsOnly } from "./HostPolicy"
 
 // These tests drive a real Chromium against a local fixture server, so they
 // cover the parts of `PuppeteerRenderingService` that the mocked unit tests in
 // `RenderingService.test.ts` cannot: navigation, deferred DOM updates and
 // in-page script evaluation.
 describe("RenderingService against a real browser", () => {
-  const renderingService = new PuppeteerRenderingService(fixedClock())
+  const renderingService = new PuppeteerRenderingService(
+    fixedClock(),
+    allowAllHosts
+  )
 
   let server: TestHttpServer
 
@@ -22,7 +28,17 @@ describe("RenderingService against a real browser", () => {
       "/static": staticPage,
       "/deferred": deferredContentPage(500),
       "/never": deferredContentPage(60_000),
+      "/secret": "<p>Top secret</p>",
+      "/inline-image": inlineImagePage,
+      "/leaky": (port) => fetchingPage(`http://localhost:${port}/secret`),
+      "/redirect": (port) => ({
+        redirectTo: `http://localhost:${port}/static`,
+      }),
     })
+  })
+
+  beforeEach(() => {
+    server.requests.length = 0
   })
 
   afterAll(async () => {
@@ -77,6 +93,7 @@ describe("RenderingService against a real browser", () => {
     test("rejects when a selector does not appear before the timeout", async () => {
       const impatientRenderingService = new PuppeteerRenderingService(
         fixedClock(),
+        allowAllHosts,
         1_000
       )
 
@@ -140,6 +157,69 @@ describe("RenderingService against a real browser", () => {
           null
         )
       ).rejects.toThrow(/missingFunction is not defined/u)
+    })
+  })
+
+  // The fixture server is reachable as both `127.0.0.1` and `localhost`, so a
+  // policy that only allows the former shows what interception blocks.
+  describe("host policy", () => {
+    const onlyLoopbackAddress: HostPolicy = {
+      isAllowed: (hostname) => Promise.resolve(hostname === "127.0.0.1"),
+    }
+
+    const guardedRenderingService = new PuppeteerRenderingService(
+      fixedClock(),
+      onlyLoopbackAddress
+    )
+
+    test("rejects a local address under the public-only policy", async () => {
+      const publicRenderingService = new PuppeteerRenderingService(
+        fixedClock(),
+        publicHostsOnly()
+      )
+
+      await expect(
+        publicRenderingService.render(server.urlFor("/static"), null)
+      ).rejects.toThrow("Blocked host: 127.0.0.1")
+    })
+
+    test("lets a page request a blocked host when the policy allows everything", async () => {
+      await renderingService.render(server.urlFor("/leaky"), [".done"])
+
+      expect(server.requests).toContain("/secret")
+    })
+
+    test("stops a page from requesting a blocked host", async () => {
+      await guardedRenderingService.render(server.urlFor("/leaky"), [".done"])
+
+      expect(server.requests).not.toContain("/secret")
+    })
+
+    test("still loads images embedded as data URLs", async () => {
+      const width = await guardedRenderingService.execute(
+        server.urlFor("/inline-image"),
+        "document.getElementById('pixel').naturalWidth",
+        null
+      )
+
+      expect(width).toBe(1)
+    })
+
+    test("follows a redirect to an allowed host", async () => {
+      const html = await renderingService.render(
+        server.urlFor("/redirect"),
+        null
+      )
+
+      expect(html).toContain("Static heading")
+    })
+
+    test("rejects a redirect to a blocked host", async () => {
+      await expect(
+        guardedRenderingService.render(server.urlFor("/redirect"), null)
+      ).rejects.toThrow("net::ERR_BLOCKED_BY_CLIENT")
+
+      expect(server.requests).not.toContain("/static")
     })
   })
 })

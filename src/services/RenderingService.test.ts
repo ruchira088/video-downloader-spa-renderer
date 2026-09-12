@@ -8,11 +8,13 @@ import {
   MockBrowser,
   MockPage,
 } from "../test/MockBrowser"
+import { allowAllHosts, HostPolicy } from "./HostPolicy"
 
 // Puppeteer is mocked so that these tests cover the control flow of
 // `PuppeteerRenderingService` deterministically. Error classification lives in
-// `RenderingService.errors.test.ts` and the behaviour against a real Chromium
-// in `RenderingService.integration.test.ts`.
+// `RenderingService.errors.test.ts`, request interception in
+// `RenderingService.requests.test.ts` and the behaviour against a real
+// Chromium in `RenderingService.integration.test.ts`.
 jest.mock("puppeteer", () => ({
   __esModule: true,
   default: { launch: jest.fn() },
@@ -27,9 +29,10 @@ describe("RenderingService", () => {
   let browser: MockBrowser
 
   const createRenderingService = (
-    selectorTimeoutMs?: number
+    selectorTimeoutMs?: number,
+    hostPolicy: HostPolicy = allowAllHosts
   ): PuppeteerRenderingService =>
-    new PuppeteerRenderingService(fixedClock(), selectorTimeoutMs)
+    new PuppeteerRenderingService(fixedClock(), hostPolicy, selectorTimeoutMs)
 
   beforeEach(() => {
     page = createMockPage()
