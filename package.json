@@ -2,6 +2,9 @@
   "name": "video-downloader-spa-renderer",
   "description": "Renders SPA pages",
   "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "compile": "tsc && npm run setup-config",
     "compile:watch": "tsc -w",
