@@ -1,27 +1,25 @@
-FROM node:lts-alpine AS builder
+FROM node:24-alpine AS builder
 
-RUN apk add git
+RUN apk add --no-cache git
 
 WORKDIR /opt/app
 
 # The build stage only compiles TypeScript, so it has no use for a browser.
 ENV PUPPETEER_SKIP_DOWNLOAD="true"
 
-ADD package.json .
-ADD package-lock.json .
+COPY package.json package-lock.json ./
 
 RUN npm ci
 
-ADD tsconfig.json .
-ADD tsconfig.scripts.json .
-ADD src src
-ADD config config
-ADD scripts scripts
-ADD .git .git
+COPY tsconfig.json tsconfig.scripts.json ./
+COPY src src
+COPY config config
+COPY scripts scripts
+COPY .git .git
 
 RUN npm run clean-compile
 
-FROM node:lts-alpine
+FROM node:24-alpine
 
 LABEL org.opencontainers.image.source=https://github.com/ruchira088/video-downloader-spa-renderer
 
@@ -39,15 +37,18 @@ ENV PUPPETEER_EXECUTABLE_PATH="/usr/bin/chromium-browser"
 
 WORKDIR /opt/app/build
 
-ADD package.json .
-ADD package-lock.json .
+COPY package.json package-lock.json ./
 
 RUN npm ci --omit=dev
 
-COPY --from=builder /opt/app/build /opt/app/build
+COPY --from=builder --chown=node:node /opt/app/build /opt/app/build
 
 ENV GIT_COMMIT="{{ git_commit }}"
 ENV GIT_BRANCH="{{ git_branch }}"
+
+# Chromium still runs with --no-sandbox (the container has no user
+# namespaces), but at least not as root.
+USER node
 
 ENTRYPOINT ["/sbin/tini", "--", "npm", "run"]
 
