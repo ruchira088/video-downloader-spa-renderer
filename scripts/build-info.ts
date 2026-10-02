@@ -1,4 +1,4 @@
-import SimpleGit from "simple-git"
+import { simpleGit } from "simple-git"
 import path from "node:path"
 import { readFile, writeFile } from "node:fs/promises"
 
@@ -9,10 +9,10 @@ type BuildInfo = {
 }
 
 const generateBuildInfo = async (): Promise<BuildInfo> => {
-  const simpleGit = SimpleGit()
+  const git = simpleGit()
 
-  const gitBranch = await simpleGit.branch()
-  const gitCommit = await simpleGit.revparse(["--short", "HEAD"])
+  const gitBranch = await git.branch()
+  const gitCommit = await git.revparse(["--short", "HEAD"])
 
   const buildTimestamp = new Date().toISOString()
 

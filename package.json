@@ -25,7 +25,7 @@
     "axios": "^1.20.0",
     "config": "^5.0.1",
     "express": "^5.2.1",
-    "puppeteer": "^25.11.0",
+    "puppeteer": "^25.12.0",
     "winston": "^3.19.0",
     "zod": "^4.6.5"
   },
@@ -35,22 +35,22 @@
     "@babel/preset-typescript": "^8.0.1",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
-    "@types/node": "^24.13.6",
+    "@types/node": "^24.19.1",
     "@types/supertest": "^7.2.1",
     "cheerio": "^1.2.0",
     "jest": "^30.5.2",
-    "oxlint": "^1.83.0",
-    "prettier": "^3.9.8",
+    "oxlint": "^1.86.0",
+    "prettier": "^3.9.9",
     "rimraf": "^6.1.3",
-    "simple-git": "^3.36.0",
-    "supertest": "^7.2.2",
-    "tsx": "^4.23.13",
+    "simple-git": "^4.0.2",
+    "supertest": "^7.3.1",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   },
   "allowScripts": {
     "esbuild@0.28.2": true,
     "fsevents@2.3.3": true,
-    "puppeteer@25.11.0": true,
+    "puppeteer@25.12.0": true,
     "unrs-resolver@1.12.2": true
   }
 }
