@@ -5,5 +5,10 @@
   },
   "healthCheckConfiguration": {
     "url": "HEALTH_CHECK_URL"
+  },
+  "renderingConfiguration": {
+    "renderTimeoutMs": "RENDER_TIMEOUT_MS",
+    "maxConcurrentRenders": "MAX_CONCURRENT_RENDERS",
+    "maxQueuedRenders": "MAX_QUEUED_RENDERS"
   }
 }

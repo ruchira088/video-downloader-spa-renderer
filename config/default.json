@@ -11,5 +11,10 @@
   "healthCheckConfiguration": {
     "url": "https://spa-health-check.ruchij.com",
     "readyCssSelectors": ["#text-field", ".class-name", ".deferred-class-name"]
+  },
+  "renderingConfiguration": {
+    "renderTimeoutMs": 60000,
+    "maxConcurrentRenders": 4,
+    "maxQueuedRenders": 8
   }
 }

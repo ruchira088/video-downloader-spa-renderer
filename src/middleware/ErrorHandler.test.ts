@@ -2,6 +2,7 @@ import request from "supertest"
 import express, { Express, NextFunction, Request, Response } from "express"
 import errorHandler from "./ErrorHandler"
 import { z, ZodError } from "zod"
+import { RendererBusyError } from "../services/RendererBusyError"
 
 describe("ErrorHandler middleware", () => {
   const createTestApp = (errorToThrow: () => Error): Express => {
@@ -109,6 +110,18 @@ describe("ErrorHandler middleware", () => {
       })
     }
   )
+
+  test("responds to a RendererBusyError with 503 and a Retry-After header", async () => {
+    const app = createTestApp(() => new RendererBusyError())
+
+    const response = await request(app).get("/test")
+
+    expect(response.status).toBe(503)
+    expect(response.headers["retry-after"]).toBe("5")
+    expect(response.body).toStrictEqual({
+      errorMessages: ["The renderer is at capacity, try again shortly"],
+    })
+  })
 
   test("responds with 500 and an empty message when the error has none", async () => {
     const app = createTestApp(() => new Error())

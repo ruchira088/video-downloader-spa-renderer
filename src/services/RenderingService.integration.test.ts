@@ -94,12 +94,24 @@ describe("RenderingService against a real browser", () => {
       const impatientRenderingService = new PuppeteerRenderingService(
         fixedClock(),
         allowAllHosts,
-        1_000
+        { selectorTimeoutMs: 1_000 }
       )
 
       await expect(
         impatientRenderingService.render(server.urlFor("/never"), [".deferred"])
       ).rejects.toThrow(/\.deferred/u)
+    })
+
+    test("abandons a render that outlives the overall deadline", async () => {
+      const hastyRenderingService = new PuppeteerRenderingService(
+        fixedClock(),
+        allowAllHosts,
+        { renderTimeoutMs: 1_000 }
+      )
+
+      await expect(
+        hastyRenderingService.render(server.urlFor("/never"), [".deferred"])
+      ).rejects.toThrow("Render did not complete within 1000ms")
     })
 
     test("rejects when the server responds with a connection error", async () => {

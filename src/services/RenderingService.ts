@@ -2,22 +2,49 @@ import puppeteer, { Browser, Page } from "puppeteer"
 import { Logger } from "winston"
 import { create as createLogger } from "../logger/Logger"
 import { Clock } from "../utils/Clock"
-import { errorMessage, Optional } from "../utils/Helpers"
+import { abortable, errorMessage, Optional } from "../utils/Helpers"
 import { RenderingError } from "./RenderingError"
 import { HostPolicy } from "./HostPolicy"
 import { RequestFilter } from "./RequestFilter"
+import { RenderLimiter } from "./RenderLimiter"
+import { RendererBusyError } from "./RendererBusyError"
 
+/**
+ * Aborting `signal` abandons the render: the browser is closed and the
+ * returned promise rejects with the abort reason.
+ */
 export interface RenderingService {
-  render(url: string, readyCssSelectors: Optional<string[]>): Promise<string>
+  render(
+    url: string,
+    readyCssSelectors: Optional<string[]>,
+    signal?: AbortSignal
+  ): Promise<string>
 
   execute(
     url: string,
     js: string,
-    readyCssSelectors: Optional<string[]>
+    readyCssSelectors: Optional<string[]>,
+    signal?: AbortSignal
   ): Promise<unknown>
 }
 
-const DEFAULT_SELECTOR_TIMEOUT_MS = 30_000
+export type RenderingOptions = {
+  /** How long to wait for each of the `readyCssSelectors`. */
+  readonly selectorTimeoutMs: number
+  /** How long a render may take in all, including time spent queued. */
+  readonly renderTimeoutMs: number
+  /** How many browsers may run at once. */
+  readonly maxConcurrentRenders: number
+  /** How many renders may wait for a browser before new ones are rejected. */
+  readonly maxQueuedRenders: number
+}
+
+const DEFAULT_RENDERING_OPTIONS: RenderingOptions = {
+  selectorTimeoutMs: 30_000,
+  renderTimeoutMs: 60_000,
+  maxConcurrentRenders: 4,
+  maxQueuedRenders: 8,
+}
 
 const ALLOWED_PROTOCOLS = ["http:", "https:"]
 
@@ -50,34 +77,58 @@ type Action = "render" | "execute"
 const logger: Logger = createLogger(__filename)
 
 export class PuppeteerRenderingService implements RenderingService {
+  private readonly options: RenderingOptions
+  private readonly limiter: RenderLimiter
+
   constructor(
     private readonly clock: Clock,
     private readonly hostPolicy: HostPolicy,
-    private readonly selectorTimeoutMs: number = DEFAULT_SELECTOR_TIMEOUT_MS
-  ) {}
+    options: Partial<RenderingOptions> = {}
+  ) {
+    // An option given as `undefined` falls back to its default rather than
+    // overriding it.
+    this.options = {
+      ...DEFAULT_RENDERING_OPTIONS,
+      ...Object.fromEntries(
+        Object.entries(options).filter(([, value]) => value !== undefined)
+      ),
+    }
+    this.limiter = new RenderLimiter(
+      this.options.maxConcurrentRenders,
+      this.options.maxQueuedRenders
+    )
+  }
 
-  render(url: string, readyCssSelectors: Optional<string[]>): Promise<string> {
-    return this.run("render", url, readyCssSelectors, (page) => page.content())
+  render(
+    url: string,
+    readyCssSelectors: Optional<string[]>,
+    signal?: AbortSignal
+  ): Promise<string> {
+    return this.run("render", url, readyCssSelectors, signal, (page) =>
+      page.content()
+    )
   }
 
   execute(
     url: string,
     js: string,
-    readyCssSelectors: Optional<string[]>
+    readyCssSelectors: Optional<string[]>,
+    signal?: AbortSignal
   ): Promise<unknown> {
-    return this.run("execute", url, readyCssSelectors, (page) =>
+    return this.run("execute", url, readyCssSelectors, signal, (page) =>
       page.evaluate(js)
     )
   }
 
   /**
-   * Launches a fresh browser for the request and closes it once the page has
-   * been rendered, whatever the outcome.
+   * Validates the request, then waits for a free browser slot. The deadline
+   * starts here, so time spent queued counts towards it.
    */
   private async run<A>(
     action: Action,
     url: string,
     readyCssSelectors: Optional<string[]>,
+    callerSignal: AbortSignal | undefined,
     execute: (page: Page) => Promise<A>
   ): Promise<A> {
     const startTime = this.clock.timestamp()
@@ -91,19 +142,77 @@ export class PuppeteerRenderingService implements RenderingService {
 
     const cssSelectors = readyCssSelectors ?? []
 
+    const { renderTimeoutMs } = this.options
+    const deadline = new AbortController()
+    const timer = setTimeout(() => {
+      deadline.abort(
+        new RenderingError(
+          `Render did not complete within ${renderTimeoutMs}ms`
+        )
+      )
+    }, renderTimeoutMs)
+
+    const signal =
+      callerSignal === undefined
+        ? deadline.signal
+        : AbortSignal.any([callerSignal, deadline.signal])
+
+    let started = false
+
+    try {
+      return await this.limiter.run(() => {
+        started = true
+
+        return this.renderInBrowser(
+          action,
+          url,
+          requestFilter,
+          cssSelectors,
+          signal,
+          startTime,
+          execute
+        )
+      }, signal)
+    } catch (exception) {
+      // Running out of time before a browser was free is a matter of
+      // capacity, not of the page, so the client is told to retry.
+      if (!started && exception === deadline.signal.reason) {
+        throw new RendererBusyError()
+      }
+
+      throw exception
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+
+  /**
+   * Launches a fresh browser for the request and closes it once the page has
+   * been rendered, whatever the outcome. Closing it is also what stops the
+   * work on the page when `signal` aborts.
+   */
+  private async renderInBrowser<A>(
+    action: Action,
+    url: string,
+    requestFilter: RequestFilter,
+    cssSelectors: string[],
+    signal: AbortSignal,
+    startTime: Date,
+    execute: (page: Page) => Promise<A>
+  ): Promise<A> {
     logger.info(
       `Rendering url=${url} with readyCssSelectors=[${cssSelectors.join(", ")}]`
     )
     const browser = await launchBrowser()
 
     try {
-      const page = await browser.newPage()
-      const result = await this.renderPage(
-        page,
-        requestFilter,
-        url,
-        cssSelectors,
-        execute
+      const result = await abortable(
+        browser
+          .newPage()
+          .then((page) =>
+            this.renderPage(page, requestFilter, url, cssSelectors, execute)
+          ),
+        signal
       )
 
       const duration = this.clock.timestamp().getTime() - startTime.getTime()
@@ -141,7 +250,7 @@ export class PuppeteerRenderingService implements RenderingService {
 
       for (const cssSelector of cssSelectors) {
         await page.waitForSelector(cssSelector, {
-          timeout: this.selectorTimeoutMs,
+          timeout: this.options.selectorTimeoutMs,
         })
       }
 

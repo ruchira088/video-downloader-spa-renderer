@@ -32,7 +32,9 @@ describe("RenderingService", () => {
     selectorTimeoutMs?: number,
     hostPolicy: HostPolicy = allowAllHosts
   ): PuppeteerRenderingService =>
-    new PuppeteerRenderingService(fixedClock(), hostPolicy, selectorTimeoutMs)
+    new PuppeteerRenderingService(fixedClock(), hostPolicy, {
+      selectorTimeoutMs,
+    })
 
   beforeEach(() => {
     page = createMockPage()

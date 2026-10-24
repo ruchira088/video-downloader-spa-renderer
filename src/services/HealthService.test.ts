@@ -133,10 +133,13 @@ describe("HealthService", () => {
         internetConnectivity: HealthStatus.Healthy,
         spaRendering: HealthStatus.Healthy,
       })
-      expect(axiosInstance.get).toHaveBeenCalledWith("https://example.com")
+      expect(axiosInstance.get).toHaveBeenCalledWith("https://example.com", {
+        signal: expect.any(AbortSignal),
+      })
       expect(renderingService.render).toHaveBeenCalledWith(
         "https://example.com",
-        ["#test"]
+        ["#test"],
+        expect.any(AbortSignal)
       )
     })
 
@@ -220,6 +223,32 @@ describe("HealthService", () => {
         internetConnectivity: HealthStatus.Healthy,
         spaRendering: HealthStatus.Unhealthy,
       })
+    })
+
+    // A timed-out check must not leave its browser or connection open.
+    test("aborts both checks once they give up", async () => {
+      const renderingService = rendering.hangs()
+      const axiosInstance = connectivity.hangs()
+
+      const healthCheck = createHealthService({
+        renderingService,
+        axiosInstance,
+      }).healthCheck()
+
+      const renderSignal = renderingService.render.mock.calls[0]?.[2]
+      const getSignal = (axiosInstance.get as jest.Mock).mock.calls[0]?.[1]
+        ?.signal
+
+      await jest.advanceTimersByTimeAsync(4_999)
+      expect(getSignal?.aborted).toBe(false)
+
+      await jest.advanceTimersByTimeAsync(1)
+      expect(getSignal?.aborted).toBe(true)
+      expect(renderSignal?.aborted).toBe(false)
+
+      await jest.advanceTimersByTimeAsync(5_000)
+      await healthCheck
+      expect(renderSignal?.aborted).toBe(true)
     })
 
     test("starts both checks before awaiting either of them", async () => {

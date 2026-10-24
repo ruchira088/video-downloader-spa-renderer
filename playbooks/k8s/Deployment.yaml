@@ -18,6 +18,16 @@ spec:
       containers:
         - name: spa-renderer-container
           image: "ghcr.io/ruchira088/video-downloader-spa-renderer:{{ git_branch }}-{{ git_commit }}"
+          # Sized for renderingConfiguration.maxConcurrentRenders (4 by default):
+          # each Chromium takes roughly 200-300 MiB on top of the Node process.
+          # Change these together with MAX_CONCURRENT_RENDERS. There is no CPU
+          # limit, so a busy pod is slowed by contention rather than throttled.
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              memory: 2Gi
           readinessProbe:
             httpGet:
               port: expressjs-port

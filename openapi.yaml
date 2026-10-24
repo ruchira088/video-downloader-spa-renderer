@@ -108,7 +108,8 @@ paths:
           description: |
             The request could not be fulfilled: the body failed validation, the URL was
             rejected (not http/https, or pointing at a private or local address), the page
-            could not be reached, or a `readyCssSelectors` entry never appeared.
+            could not be reached, a `readyCssSelectors` entry never appeared, or the render
+            outlived the overall render deadline.
           content:
             application/json:
               schema:
@@ -116,6 +117,8 @@ paths:
               example:
                 errorMessages:
                   - "Failed to render page: Timeout exceeded"
+        "503":
+          $ref: "#/components/responses/RendererBusy"
         "500":
           description: The renderer itself failed, for example the browser could not be launched
           content:
@@ -174,8 +177,8 @@ paths:
           description: |
             The request could not be fulfilled: the body failed validation, the URL was
             rejected (not http/https, or pointing at a private or local address), the page
-            could not be reached, a `readyCssSelectors` entry never appeared, or the script
-            threw.
+            could not be reached, a `readyCssSelectors` entry never appeared, the script
+            threw, or the render outlived the overall render deadline.
           content:
             application/json:
               schema:
@@ -183,6 +186,8 @@ paths:
               example:
                 errorMessages:
                   - "Failed to execute script: ReferenceError"
+        "503":
+          $ref: "#/components/responses/RendererBusy"
         "500":
           description: The renderer itself failed, for example the browser could not be launched
           content:
@@ -194,6 +199,25 @@ paths:
                   - Failed to launch the browser process
 
 components:
+  responses:
+    RendererBusy:
+      description: |
+        Every browser is busy and the queue of waiting renders is full, or the render
+        could not get a browser before its deadline. Retry after the number of seconds
+        in the `Retry-After` header.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds to wait before retrying
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            errorMessages:
+              - The renderer is at capacity, try again shortly
+
   schemas:
     ApplicationInformation:
       type: object
@@ -256,6 +280,7 @@ components:
           example: https://example.com
         readyCssSelectors:
           type: array
+          maxItems: 10
           items:
             type: string
           nullable: true

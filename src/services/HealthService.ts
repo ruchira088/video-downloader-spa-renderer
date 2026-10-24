@@ -65,21 +65,22 @@ export class HealthServiceImpl implements HealthService {
     const { url, readyCssSelectors } = this.healthCheckConfiguration
 
     // Both checks run concurrently, so the whole health check is bounded by
-    // the longer of the two timeouts rather than by their sum.
+    // the longer of the two timeouts rather than by their sum. A check that
+    // times out is aborted, so it does not hold a browser or a connection
+    // open after the health check has answered.
     const [internetConnectivity, spaRendering] = await Promise.all([
       this.status(
         "Internet connectivity",
         INTERNET_CONNECTIVITY_TIMEOUT_MS,
-        this.axiosInstance.get(url).then((response) => {
-          if (response.status !== 200) {
-            throw new Error(`Unexpected HTTP status ${response.status}`)
-          }
-        })
+        (signal) =>
+          this.axiosInstance.get(url, { signal }).then((response) => {
+            if (response.status !== 200) {
+              throw new Error(`Unexpected HTTP status ${response.status}`)
+            }
+          })
       ),
-      this.status(
-        "SPA rendering",
-        SPA_RENDERING_TIMEOUT_MS,
-        this.renderingService.render(url, readyCssSelectors)
+      this.status("SPA rendering", SPA_RENDERING_TIMEOUT_MS, (signal) =>
+        this.renderingService.render(url, readyCssSelectors, signal)
       ),
     ])
 
@@ -89,7 +90,7 @@ export class HealthServiceImpl implements HealthService {
   private async status(
     description: string,
     timeoutMs: number,
-    check: Promise<unknown>
+    check: (signal: AbortSignal) => Promise<unknown>
   ): Promise<HealthStatus> {
     try {
       await withTimeout(check, timeoutMs)

@@ -34,20 +34,26 @@ Configuration is managed via the `config` npm package with JSON files in the `/c
 
 ### Default Configuration
 
-| Setting                                      | Default                                                  | Description                                       |
-| -------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------- |
-| `httpConfiguration.host`                     | `0.0.0.0`                                                | Server bind address (an IPv4 address)             |
-| `httpConfiguration.port`                     | `8000`                                                   | Server port                                       |
-| `healthCheckConfiguration.url`               | `https://spa-health-check.ruchij.com`                    | SPA rendered by the health check                  |
-| `healthCheckConfiguration.readyCssSelectors` | `["#text-field", ".class-name", ".deferred-class-name"]` | Selectors the health check waits for on that page |
+| Setting                                       | Default                                                  | Description                                         |
+| --------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------- |
+| `httpConfiguration.host`                      | `0.0.0.0`                                                | Server bind address (an IPv4 address)               |
+| `httpConfiguration.port`                      | `8000`                                                   | Server port                                         |
+| `healthCheckConfiguration.url`                | `https://spa-health-check.ruchij.com`                    | SPA rendered by the health check                    |
+| `healthCheckConfiguration.readyCssSelectors`  | `["#text-field", ".class-name", ".deferred-class-name"]` | Selectors the health check waits for on that page   |
+| `renderingConfiguration.renderTimeoutMs`      | `60000`                                                  | Overall deadline for a render, time queued included |
+| `renderingConfiguration.maxConcurrentRenders` | `4`                                                      | Browsers that may run at once                       |
+| `renderingConfiguration.maxQueuedRenders`     | `8`                                                      | Renders that may wait for a browser before a 503    |
 
 ### Environment Variables
 
-| Variable           | Config Path                    | Description                      |
-| ------------------ | ------------------------------ | -------------------------------- |
-| `HTTP_HOST`        | `httpConfiguration.host`       | Server host address              |
-| `HTTP_PORT`        | `httpConfiguration.port`       | Server port                      |
-| `HEALTH_CHECK_URL` | `healthCheckConfiguration.url` | SPA rendered by the health check |
+| Variable                 | Config Path                                   | Description                              |
+| ------------------------ | --------------------------------------------- | ---------------------------------------- |
+| `HTTP_HOST`              | `httpConfiguration.host`                      | Server host address                      |
+| `HTTP_PORT`              | `httpConfiguration.port`                      | Server port                              |
+| `HEALTH_CHECK_URL`       | `healthCheckConfiguration.url`                | SPA rendered by the health check         |
+| `RENDER_TIMEOUT_MS`      | `renderingConfiguration.renderTimeoutMs`      | Overall render deadline                  |
+| `MAX_CONCURRENT_RENDERS` | `renderingConfiguration.maxConcurrentRenders` | Concurrent browser limit                 |
+| `MAX_QUEUED_RENDERS`     | `renderingConfiguration.maxQueuedRenders`     | Queue length before renders are rejected |
 
 ## Usage
 

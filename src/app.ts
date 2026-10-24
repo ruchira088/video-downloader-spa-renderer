@@ -43,7 +43,8 @@ export const createAppFromConfig = (
   const axiosInstance: AxiosInstance = axios.create({ timeout: 10_000 })
   const renderingService: RenderingService = new PuppeteerRenderingService(
     defaultClock,
-    hostPolicy
+    hostPolicy,
+    applicationConfiguration.renderingConfiguration
   )
 
   const healthService = new HealthServiceImpl(

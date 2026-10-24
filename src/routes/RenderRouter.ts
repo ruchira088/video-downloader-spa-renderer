@@ -2,9 +2,12 @@ import express, { Request, Response, Router } from "express"
 import { z } from "zod"
 import { RenderingService } from "../services/RenderingService"
 
+// Each selector may wait out its own timeout, so the list is capped.
+const MAX_READY_CSS_SELECTORS = 10
+
 const RenderRequest = z.object({
   url: z.string(),
-  readyCssSelectors: z.array(z.string()).nullish(),
+  readyCssSelectors: z.array(z.string()).max(MAX_READY_CSS_SELECTORS).nullish(),
 })
 
 const JsExecutionRequest = RenderRequest.extend({ script: z.string() })

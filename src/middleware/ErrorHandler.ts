@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express"
 import { ZodError } from "zod"
 import { create as createLogger } from "../logger/Logger"
+import { RendererBusyError } from "../services/RendererBusyError"
 
 const logger = createLogger(__filename)
 
@@ -33,6 +34,16 @@ const errorHandler = (
 ): void => {
   if (error instanceof ZodError) {
     response.status(400).json({ errorMessages: error.issues })
+    return
+  }
+
+  // Shedding load is the renderer working as intended, so it is not logged
+  // as a failure; the client is told when to come back instead.
+  if (error instanceof RendererBusyError) {
+    response
+      .status(error.status)
+      .set("Retry-After", String(error.retryAfterSeconds))
+      .json({ errorMessages: [error.message] })
     return
   }
 

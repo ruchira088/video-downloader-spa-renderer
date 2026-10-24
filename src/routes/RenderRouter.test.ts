@@ -22,6 +22,32 @@ describe("RenderRouter", () => {
   })
 
   describe("POST /render", () => {
+    // Each selector may wait out its own timeout, so an unbounded list would
+    // let a single request hold a browser for as long as it liked.
+    test("rejects more than 10 readyCssSelectors", async () => {
+      const response = await request(app)
+        .post("/render")
+        .send({
+          url: "https://example.com",
+          readyCssSelectors: Array.from({ length: 11 }, (_, i) => `#s${i}`),
+        })
+
+      expect(response.status).toBe(400)
+      expect(response.body.errorMessages[0].path).toEqual(["readyCssSelectors"])
+      expect(renderingService.render).not.toHaveBeenCalled()
+    })
+
+    test("accepts 10 readyCssSelectors", async () => {
+      const response = await request(app)
+        .post("/render")
+        .send({
+          url: "https://example.com",
+          readyCssSelectors: Array.from({ length: 10 }, (_, i) => `#s${i}`),
+        })
+
+      expect(response.status).toBe(200)
+    })
+
     test("responds with the rendered markup", async () => {
       const response = await request(app)
         .post("/render")

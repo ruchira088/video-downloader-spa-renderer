@@ -16,6 +16,11 @@ describe("ApplicationConfiguration", () => {
       url: "https://example.com",
       readyCssSelectors: ["#selector"],
     },
+    renderingConfiguration: {
+      renderTimeoutMs: 60_000,
+      maxConcurrentRenders: 4,
+      maxQueuedRenders: 8,
+    },
   }
 
   test("parses every section of the configuration", () => {
@@ -37,12 +42,19 @@ describe("ApplicationConfiguration", () => {
       url: "https://example.com",
       readyCssSelectors: ["#selector"],
     })
+
+    expect(applicationConfiguration.renderingConfiguration).toStrictEqual({
+      renderTimeoutMs: 60_000,
+      maxConcurrentRenders: 4,
+      maxQueuedRenders: 8,
+    })
   })
 
   test.each([
     "httpConfiguration",
     "buildInformation",
     "healthCheckConfiguration",
+    "renderingConfiguration",
   ])("rejects a configuration without %s", (section) => {
     const { [section]: _omitted, ...rest } = validConfiguration as Record<
       string,
@@ -60,6 +72,7 @@ describe("ApplicationConfiguration", () => {
       httpConfiguration: { host: "localhost", port: 1234 },
       buildInformation: validConfiguration.buildInformation,
       healthCheckConfiguration: { url: "nope", readyCssSelectors: [] },
+      renderingConfiguration: validConfiguration.renderingConfiguration,
     })
 
     expect(result.success).toBe(false)
