@@ -24,10 +24,10 @@
   "dependencies": {
     "axios": "^1.20.0",
     "config": "^5.0.1",
-    "express": "^5.2.1",
-    "puppeteer": "^25.12.0",
+    "express": "^5.3.0",
+    "puppeteer": "^25.16.0",
     "winston": "^3.19.0",
-    "zod": "^4.6.5"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@babel/core": "^8.0.7",
@@ -39,8 +39,8 @@
     "@types/supertest": "^7.2.1",
     "cheerio": "^1.2.0",
     "jest": "^30.5.2",
-    "oxlint": "^1.87.0",
-    "prettier": "^3.9.9",
+    "oxlint": "^1.89.0",
+    "prettier": "^3.9.10",
     "rimraf": "^6.1.3",
     "simple-git": "^4.0.2",
     "supertest": "^7.3.1",
