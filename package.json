@@ -22,25 +22,25 @@
     "prettier:fix": "prettier . --write"
   },
   "dependencies": {
-    "axios": "^1.20.0",
+    "axios": "^1.21.0",
     "config": "^5.0.1",
-    "express": "^5.2.1",
-    "puppeteer": "^25.12.0",
+    "express": "^5.3.0",
+    "puppeteer": "^25.16.0",
     "winston": "^3.19.0",
-    "zod": "^4.6.5"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@babel/core": "^8.0.7",
+    "@babel/core": "^8.0.9",
     "@babel/plugin-transform-modules-commonjs": "^8.0.1",
     "@babel/preset-typescript": "^8.0.7",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
-    "@types/node": "^24.19.1",
+    "@types/node": "^24.19.2",
     "@types/supertest": "^7.2.1",
     "cheerio": "^1.2.0",
     "jest": "^30.5.2",
-    "oxlint": "^1.87.0",
-    "prettier": "^3.9.9",
+    "oxlint": "^1.90.0",
+    "prettier": "^3.9.10",
     "rimraf": "^6.1.3",
     "simple-git": "^4.0.2",
     "supertest": "^7.3.1",
@@ -50,7 +50,7 @@
   "allowScripts": {
     "esbuild@0.28.2": true,
     "fsevents@2.3.3": true,
-    "puppeteer@25.12.0": true,
+    "puppeteer@25.16.0": true,
     "unrs-resolver@1.12.2": true
   }
 }
