@@ -54,6 +54,7 @@ Configuration is managed via the `config` npm package with JSON files in the `/c
 | `RENDER_TIMEOUT_MS`      | `renderingConfiguration.renderTimeoutMs`      | Overall render deadline                  |
 | `MAX_CONCURRENT_RENDERS` | `renderingConfiguration.maxConcurrentRenders` | Concurrent browser limit                 |
 | `MAX_QUEUED_RENDERS`     | `renderingConfiguration.maxQueuedRenders`     | Queue length before renders are rejected |
+| `HTTP_PROXY_URL`         | `renderingConfiguration.proxyUrl`             | Optional HTTP proxy for all page traffic |
 
 ## Usage
 

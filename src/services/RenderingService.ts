@@ -37,6 +37,8 @@ export type RenderingOptions = {
   readonly maxConcurrentRenders: number
   /** How many renders may wait for a browser before new ones are rejected. */
   readonly maxQueuedRenders: number
+  /** HTTP proxy for all page traffic; the browser connects directly if unset. */
+  readonly proxyUrl?: string
 }
 
 const DEFAULT_RENDERING_OPTIONS: RenderingOptions = {
@@ -48,9 +50,13 @@ const DEFAULT_RENDERING_OPTIONS: RenderingOptions = {
 
 const ALLOWED_PROTOCOLS = ["http:", "https:"]
 
-const launchBrowser = (): Promise<Browser> =>
+const launchBrowser = (proxyUrl: Optional<string>): Promise<Browser> =>
   puppeteer.launch({
-    args: ["--disable-dev-shm-usage", "--no-sandbox"],
+    args: [
+      "--disable-dev-shm-usage",
+      "--no-sandbox",
+      ...(proxyUrl ? [`--proxy-server=${proxyUrl}`] : []),
+    ],
     headless: true,
   })
 
@@ -203,7 +209,7 @@ export class PuppeteerRenderingService implements RenderingService {
     logger.info(
       `Rendering url=${url} with readyCssSelectors=[${cssSelectors.join(", ")}]`
     )
-    const browser = await launchBrowser()
+    const browser = await launchBrowser(this.options.proxyUrl)
 
     try {
       const result = await abortable(

@@ -56,6 +56,21 @@ describe("RenderingService", () => {
     })
   })
 
+  test("routes the browser through the configured proxy", async () => {
+    await new PuppeteerRenderingService(fixedClock(), allowAllHosts, {
+      proxyUrl: "http://forward-proxy-service:8888",
+    }).render("https://example.com", null)
+
+    expect(mockedLaunch).toHaveBeenCalledWith({
+      args: [
+        "--disable-dev-shm-usage",
+        "--no-sandbox",
+        "--proxy-server=http://forward-proxy-service:8888",
+      ],
+      headless: true,
+    })
+  })
+
   describe("render", () => {
     test("returns the page content and closes the browser", async () => {
       const content = await createRenderingService().render(

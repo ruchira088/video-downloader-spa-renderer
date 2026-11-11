@@ -18,6 +18,13 @@ spec:
       containers:
         - name: spa-renderer-container
           image: "ghcr.io/ruchira088/video-downloader-spa-renderer:{{ git_branch }}-{{ git_commit }}"
+{% if http_proxy_url is defined %}
+          # Same forward proxy the back-end downloads through: some sites sign
+          # video URLs for the IP that rendered the page.
+          env:
+            - name: HTTP_PROXY_URL
+              value: "{{ http_proxy_url }}"
+{% endif %}
           # Sized for renderingConfiguration.maxConcurrentRenders (4 by default):
           # each Chromium takes roughly 200-300 MiB on top of the Node process.
           # Change these together with MAX_CONCURRENT_RENDERS. There is no CPU

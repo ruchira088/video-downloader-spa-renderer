@@ -9,6 +9,7 @@
   "renderingConfiguration": {
     "renderTimeoutMs": "RENDER_TIMEOUT_MS",
     "maxConcurrentRenders": "MAX_CONCURRENT_RENDERS",
-    "maxQueuedRenders": "MAX_QUEUED_RENDERS"
+    "maxQueuedRenders": "MAX_QUEUED_RENDERS",
+    "proxyUrl": "HTTP_PROXY_URL"
   }
 }

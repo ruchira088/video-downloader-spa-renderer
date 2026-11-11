@@ -25,6 +25,25 @@ describe("RenderingConfiguration", () => {
     })
   })
 
+  test("accepts an optional HTTP proxy URL", () => {
+    expect(
+      RenderingConfiguration.parse({
+        ...valid,
+        proxyUrl: "http://forward-proxy-service:8888",
+      })
+    ).toEqual({ ...valid, proxyUrl: "http://forward-proxy-service:8888" })
+  })
+
+  test.each(["not a url", "socks5://proxy:1080", ""])(
+    "rejects a proxyUrl of %p",
+    (proxyUrl) => {
+      const result = RenderingConfiguration.safeParse({ ...valid, proxyUrl })
+
+      expect(result.success).toBe(false)
+      expect(result.error?.issues[0]?.path).toEqual(["proxyUrl"])
+    }
+  )
+
   // A queue of zero is valid: it sheds every request that finds the slots
   // busy. Running no renders at all is not.
   test.each([

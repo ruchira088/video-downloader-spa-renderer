@@ -6,6 +6,7 @@
     - set_fact:
         k8s_namespace: video-downloader-back-end
         hostname: spa-renderer.video.home.ruchij.com
+        http_proxy_url: http://forward-proxy-service:8888
         replica_count: 2
         aws_ssm_k8s_config: /infrastructure/prod/k8s/config
 
